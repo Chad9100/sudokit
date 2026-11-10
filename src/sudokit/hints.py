@@ -47,6 +47,6 @@ def hint_text(values: Sequence[int], solution: Sequence[int] | None = None) -> s
     return (
         note
         + "No step found with the techniques sudokit knows (singles, pairs, triples, "
-        "pointing, box/line, X-wing, XY-wing, swordfish).\n"
+        "pointing, box/line, X-wing, finned X-wing, XY-wing, swordfish).\n"
         f"From the solution: {cell_name(cell)} = {solution[cell]}."
     )

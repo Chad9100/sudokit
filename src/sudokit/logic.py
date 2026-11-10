@@ -290,6 +290,59 @@ def x_wing(board: Board) -> Iterator[Step]:
                     )
 
 
+def finned_x_wing(board: Board) -> Iterator[Step]:
+    """An X-wing with extra candidates (fins) in one corner's box. One of the
+    corner or a fin must hold the digit, so cells that see both lose it."""
+    for kind, other, lines, cross, pos in (
+        ("rows", "columns", ROWS, COLS, col_of),
+        ("columns", "rows", COLS, ROWS, row_of),
+    ):
+        for d in range(1, 10):
+            bit = 1 << d
+            places = {
+                n: [i for i in line if board.cands[i] & bit] for n, line in enumerate(lines)
+            }
+            for a, clean in places.items():
+                if len(clean) != 2:
+                    continue
+                pair = {pos(i) for i in clean}
+                for b, wide in places.items():
+                    if b == a or not 3 <= len(wide) <= 4:
+                        continue
+                    if not pair <= {pos(i) for i in wide}:
+                        continue
+                    fins = [i for i in wide if pos(i) not in pair]
+                    boxes = {box_of(i) for i in fins}
+                    if len(boxes) != 1:
+                        continue
+                    box = boxes.pop()
+                    for x in sorted(pair):
+                        corner = next(i for i in wide if pos(i) == x)
+                        if box_of(corner) != box:
+                            continue
+                        elims = [
+                            (i, d)
+                            for i in cross[x]
+                            if box_of(i) == box
+                            and i not in lines[a]
+                            and i not in lines[b]
+                            and board.cands[i] & bit
+                        ]
+                        if not elims:
+                            continue
+                        yield Step(
+                            "finned X-wing",
+                            HARD,
+                            f"In {kind} {a + 1} and {b + 1}, {d} forms an X-wing in "
+                            f"{other} {min(pair) + 1} and {max(pair) + 1}, except for "
+                            f"the extra {cell_names(fins)} (fin{'s' if len(fins) > 1 else ''}) in "
+                            f"{kind[:-1]} {b + 1}. Either a fin or the corner {cell_name(corner)} "
+                            f"holds {d}, and both see the rest of box {box + 1} in "
+                            f"{other[:-1]} {x + 1}, so {_elim_text(elims)}.",
+                            eliminations=elims,
+                        )
+
+
 def swordfish(board: Board) -> Iterator[Step]:
     """An X-wing grown to three lines: in three rows a digit's spots all fall
     in the same three columns (or the other way round)."""
@@ -367,6 +420,7 @@ TECHNIQUES: list[Technique] = [
     naked_triple,
     hidden_triple,
     x_wing,
+    finned_x_wing,
     xy_wing,
     swordfish,
 ]
@@ -381,6 +435,7 @@ _TECHNIQUE_LEVEL = {
     naked_triple: HARD,
     hidden_triple: HARD,
     x_wing: HARD,
+    finned_x_wing: HARD,
     xy_wing: HARD,
     swordfish: EXPERT,
 }

@@ -252,3 +252,40 @@ def test_every_step_agrees_with_the_solution(puzzle):
 def test_steps_to_next_placement_ends_with_a_placement():
     steps, found = steps_to_next_placement(parse(HARD_PUZZLE))
     assert found and steps[-1].placements
+
+
+# ------------------------------------------------------ finned X-wing
+
+# sudokit generate --difficulty hard --seed 0
+FINNED_PUZZLE = ".7.5...4..4...1..71..7.6.2.4....7....59...37....2....9.3.6.9..45..3...6..6...4.3."
+
+
+def _board_before_finned(puzzle):
+    board = Board(parse(puzzle))
+    while True:
+        step = next_step(board)
+        assert step is not None
+        if step.technique == "finned X-wing":
+            return board, step
+        board.apply(step)
+
+
+def test_finned_x_wing_found_and_sound():
+    board, step = _board_before_finned(FINNED_PUZZLE)
+    assert step.level == HARD
+    assert step.eliminations == [(52, 1)]  # r6c8
+    solution = solve(parse(FINNED_PUZZLE)).solution
+    assert all(solution[c] != d for c, d in step.eliminations)
+    assert "fin" in step.explanation and "r4c7" in step.explanation
+
+
+def test_finned_x_wing_rates_hard_and_solves():
+    r = rate(parse(FINNED_PUZZLE))
+    assert r.name == "hard" and r.solved
+    assert r.techniques["finned X-wing"] == 1
+
+
+def test_finned_x_wing_needs_a_fin_in_one_box():
+    from sudokit.logic import finned_x_wing
+
+    assert first(finned_x_wing, empty_board()) is None

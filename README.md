@@ -86,7 +86,7 @@ first:
 |--------|---------------------------------------------------------------------|
 | easy   | naked singles and hidden singles only (and at least 34 clues)       |
 | medium | pointing pairs/triples, box/line reduction, naked and hidden pairs  |
-| hard   | naked and hidden triples, X-wing, XY-wing                           |
+| hard   | naked and hidden triples, X-wing, finned X-wing, XY-wing            |
 | expert | swordfish, or none of the techniques is enough and the rest needs trial and error (rated only) |
 
 The generator removes clues in symmetric pairs and keeps a removal only while
@@ -123,6 +123,16 @@ $ sudokit solve 5721.....9.........1.562......3.756...7.9.3...632.5......951.4..
 
 The `...` lines stand for the other steps and the solved grid, left out here.
 `generate` does not make expert puzzles yet (see the roadmap).
+
+A finned X-wing is an X-wing with a few extra candidates (fins) in one
+corner's box; the puzzle below is `sudokit generate --difficulty hard --seed 0`:
+
+```text
+$ sudokit solve .7.5...4..4...1..71..7.6.2.4....7....59...37....2....9.3.6.9..45..3...6..6...4.3. --explain
+...
+32. Finned X-wing: In rows 7 and 4, 1 forms an X-wing in columns 3 and 8, except for the extra r4c7, r4c9 (fins) in row 4. Either a fin or the corner r4c8 holds 1, and both see the rest of box 6 in column 8, so remove 1 from r6c8.
+...
+```
 
 ### Solve
 
