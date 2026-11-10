@@ -181,7 +181,7 @@ def claiming(board: Board) -> Iterator[Step]:
 
 # ----------------------------------------------------------------- subsets
 
-_SIZE_WORDS = {2: "pair", 3: "triple"}
+_SIZE_WORDS = {2: "pair", 3: "triple", 4: "quad"}
 
 
 def _naked_subset(board: Board, size: int, level: int) -> Iterator[Step]:
@@ -251,6 +251,14 @@ def naked_triple(board: Board) -> Iterator[Step]:
 
 def hidden_triple(board: Board) -> Iterator[Step]:
     return _hidden_subset(board, 3, HARD)
+
+
+def naked_quad(board: Board) -> Iterator[Step]:
+    return _naked_subset(board, 4, EXPERT)
+
+
+def hidden_quad(board: Board) -> Iterator[Step]:
+    return _hidden_subset(board, 4, EXPERT)
 
 
 # ------------------------------------------------------------------ wings
@@ -454,6 +462,8 @@ TECHNIQUES: list[Technique] = [
     xy_wing,
     xyz_wing,
     swordfish,
+    naked_quad,
+    hidden_quad,
 ]
 _TECHNIQUE_LEVEL = {
     hidden_single_box: EASY,
@@ -470,6 +480,8 @@ _TECHNIQUE_LEVEL = {
     xy_wing: HARD,
     xyz_wing: HARD,
     swordfish: EXPERT,
+    naked_quad: EXPERT,
+    hidden_quad: EXPERT,
 }
 
 

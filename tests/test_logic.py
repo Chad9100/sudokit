@@ -9,8 +9,10 @@ from sudokit.logic import (
     Board,
     claiming,
     hidden_pair,
+    hidden_quad,
     hidden_single_box,
     naked_pair,
+    naked_quad,
     naked_single,
     naked_triple,
     next_step,
@@ -328,3 +330,34 @@ def test_finned_x_wing_needs_a_fin_in_one_box():
     from sudokit.logic import finned_x_wing
 
     assert first(finned_x_wing, empty_board()) is None
+
+
+# ------------------------------------------------------------- quads
+
+
+def test_naked_quad():
+    board = empty_board()
+    board.cands[0], board.cands[1] = mask(1, 2), mask(2, 3)
+    board.cands[2], board.cands[3] = mask(3, 4), mask(1, 4)
+    step = first(naked_quad, board)
+    assert step.technique == "naked quad" and step.level == EXPERT
+    assert (4, 1) in step.eliminations and (8, 4) in step.eliminations
+    assert not any(cell in (0, 1, 2, 3) for cell, _ in step.eliminations)
+    assert "r1c1, r1c2, r1c3, r1c4 hold only 1/2/3/4" in step.explanation
+
+
+def test_hidden_quad():
+    board = empty_board()
+    for cell in range(4, 9):
+        board.cands[cell] &= ~mask(1, 2, 3, 4)
+    step = first(hidden_quad, board)
+    assert step.technique == "hidden quad" and step.level == EXPERT
+    assert {cell for cell, _ in step.eliminations} == {0, 1, 2, 3}
+    assert sorted({d for _, d in step.eliminations}) == [5, 6, 7, 8, 9]
+
+
+def test_quad_needs_exactly_four_digits():
+    board = empty_board()
+    board.cands[0], board.cands[1] = mask(1, 2), mask(2, 3)
+    board.cands[2], board.cands[3] = mask(3, 4), mask(1, 5)
+    assert first(naked_quad, board) is None

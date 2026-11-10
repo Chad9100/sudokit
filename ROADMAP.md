@@ -32,7 +32,8 @@ Estimates are rough working hours for one person.
       used by `rate`, `hint`, `solve --explain` and the hard generator
 - [x] XYZ-wing (rated hard); used by `rate`, `hint`, `solve --explain`
 - [ ] Simple colouring (single-digit chains)
-- [ ] Hidden/naked quads
+- [x] Hidden/naked quads (rated expert, tried after swordfish); used by `rate`,
+      `hint` and `solve --explain`
 - [ ] An `expert` generator level built on these, with a time budget and a
       clear message when no puzzle is found in time
 - [ ] A fixed benchmark set of rated puzzles to catch rating regressions
