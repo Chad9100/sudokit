@@ -24,6 +24,7 @@ from .grid import (
 from .hints import describe, hint_text
 from .logic import EXPERT, rate, solve_logically
 from .solver import solve
+from .storage import SaveError, read_save, remove_save, save_path, write_save
 
 EXIT_OK, EXIT_UNSOLVED, EXIT_USAGE = 0, 1, 2
 
@@ -175,17 +176,63 @@ def cmd_play(args, stdin, out, err) -> int:
             err.write(f"sudokit: cannot play this puzzle: {reason}\n")
             return EXIT_UNSOLVED
         solution = result.solution
+        info: dict = {}
         header = f"sudokit: your puzzle, {clue_count(cells)} clues"
     else:
         seed = args.seed if args.seed is not None else random.SystemRandom().randrange(1_000_000)
         puzzle = generate(args.difficulty, seed=seed)
         cells, solution = puzzle.cells, puzzle.solution
+        info = {"difficulty": puzzle.difficulty, "seed": seed}
         header = f"sudokit: {puzzle.difficulty} puzzle, seed {seed}, {puzzle.clues} clues"
+    return _run_game(Game(cells, solution, info=info), stdin, out, header)
+
+
+def _describe_saved(game: Game) -> str:
+    info = game.info
+    if "difficulty" in info and "seed" in info:
+        what = f"{info['difficulty']} puzzle, seed {info['seed']}"
+    else:
+        what = "your puzzle"
+    return f"{what}, {game.values.count(0)} cell(s) to go"
+
+
+def _run_game(game: Game, stdin: TextIO, out: TextIO, header: str) -> int:
+    """Play ``game`` with saving wired up; a finished game clears its save."""
+    path = save_path()
+
+    def saver(g: Game) -> str:
+        try:
+            write_save(g.to_dict(), path)
+        except OSError as exc:
+            return f"Could not save: {exc}"
+        return f"Saved to {path}. Carry on later with: sudokit resume"
+
+    game.saver = saver
     interactive = stdin.isatty()
     if not interactive and getattr(stdin, "buffer", None) is not None:
         stdin = io.TextIOWrapper(stdin.buffer, encoding="utf-8-sig", errors="replace")
-    game = Game(cells, solution)
-    return play(game, stdin, out, echo=not interactive, header=header)
+    status = play(game, stdin, out, echo=not interactive, header=header)
+    if game.over():
+        try:
+            saved = read_save(path)
+        except SaveError:
+            saved = None
+        if saved is not None and saved.get("puzzle") == to_line(game.puzzle):
+            remove_save(path)
+    return status
+
+
+def cmd_resume(args, stdin, out, err) -> int:
+    path = save_path()
+    try:
+        data = read_save(path)
+        game = Game.from_dict(data)
+    except SaveError as exc:
+        raise InputError(str(exc)) from None
+    except ValueError as exc:
+        raise InputError(f"the saved game in {path} is damaged: {exc}") from None
+    header = f"sudokit: resuming {_describe_saved(game)}"
+    return _run_game(game, stdin, out, header)
 
 
 # ---------------------------------------------------------------- parser
@@ -228,6 +275,9 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--seed", type=int, help="seed for a repeatable puzzle")
     p.add_argument("--puzzle", help="play this puzzle instead (81-character string or file)")
     p.set_defaults(func=cmd_play)
+
+    p = sub.add_parser("resume", help="carry on with the game you saved in play")
+    p.set_defaults(func=cmd_resume)
     return parser
 
 

@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import re
 import time
-from typing import Callable, Iterable, TextIO
+from typing import Any, Callable, Iterable, TextIO
 
-from .grid import PEERS, cell_name, find_conflicts, format_grid
+from .grid import PEERS, cell_name, find_conflicts, format_grid, to_line
 from .hints import hint_text
 
 HELP_TEXT = """\
@@ -23,6 +23,7 @@ Commands:
   show            draw the board again
   time            show the elapsed time
   reveal          show the solution and end the game
+  save            save the game; carry on later with: sudokit resume
   help            show this help
   quit            leave the game (Ctrl+D / Ctrl+Z also works)"""
 
@@ -46,18 +47,29 @@ def _parse_cell(text: str) -> int | None:
 
 
 class Game:
-    def __init__(self, puzzle: list[int], solution: list[int], clock: Callable[[], float] = time.monotonic):
+    def __init__(
+        self,
+        puzzle: list[int],
+        solution: list[int],
+        clock: Callable[[], float] = time.monotonic,
+        elapsed: float = 0.0,
+        info: dict[str, Any] | None = None,
+    ):
         self.puzzle = list(puzzle)
         self.solution = list(solution)
         self.values = list(puzzle)
         self.marks: list[set[int]] = [set() for _ in range(81)]
         self.history: list[tuple[list[int], list[set[int]]]] = []
         self.clock = clock
-        self.started = clock()
+        self.started = clock() - elapsed
         self.finished_at: float | None = None
         self.hints = 0
         self.checks = 0
         self.revealed = False
+        #: Where the puzzle came from (difficulty, seed), kept in saves.
+        self.info: dict[str, Any] = dict(info or {})
+        #: Called by the ``save`` command; returns the reply to show.
+        self.saver: Callable[[Game], str] | None = None
 
     # ---------------------------------------------------------- state
 
@@ -102,6 +114,81 @@ class Game:
                 chunks.append(" " + chunk + " ")
             lines.append(f"{r + 1}  " + "|".join(chunks).rstrip())
         return "\n".join(lines)
+
+    # ---------------------------------------------------- save / load
+
+    def to_dict(self) -> dict[str, Any]:
+        """Everything needed to carry on later, as plain JSON-ready data."""
+        def marks(ms: list[set[int]]) -> list[str]:
+            return ["".join(str(d) for d in sorted(m)) for m in ms]
+
+        return {
+            "puzzle": to_line(self.puzzle),
+            "solution": to_line(self.solution),
+            "values": to_line(self.values),
+            "marks": marks(self.marks),
+            "history": [{"values": to_line(v), "marks": marks(m)} for v, m in self.history],
+            "elapsed": round(self.elapsed(), 3),
+            "hints": self.hints,
+            "checks": self.checks,
+            "info": self.info,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any], clock: Callable[[], float] = time.monotonic) -> "Game":
+        """Rebuild a game saved by :meth:`to_dict`. Raises ValueError if it does not add up."""
+        def grid(key: str, source: dict[str, Any] = data) -> list[int]:
+            text = source.get(key)
+            if not isinstance(text, str) or len(text) != 81 or not all(ch in ".123456789" for ch in text):
+                raise ValueError(f"{key!r} is not an 81-character grid")
+            return [0 if ch == "." else int(ch) for ch in text]
+
+        def marks(raw: Any) -> list[set[int]]:
+            if (not isinstance(raw, list) or len(raw) != 81
+                    or not all(isinstance(m, str) and set(m) <= set("123456789") for m in raw)):
+                raise ValueError("'marks' must be 81 strings of digits")
+            return [{int(ch) for ch in m} for m in raw]
+
+        def number(key: str) -> float:
+            value = data.get(key, 0)
+            if isinstance(value, bool) or not isinstance(value, (int, float)) or value < 0:
+                raise ValueError(f"{key!r} must be a number of at least 0")
+            return value
+
+        puzzle, solution, values = grid("puzzle"), grid("solution"), grid("values")
+        if 0 in solution or any(p and p != s for p, s in zip(puzzle, solution)):
+            raise ValueError("the solution does not fit the puzzle")
+
+        def check_givens(cells: list[int]) -> None:
+            if any(p and v != p for p, v in zip(puzzle, cells)):
+                raise ValueError("a given was changed")
+
+        check_givens(values)
+        history = []
+        raw_history = data.get("history", [])
+        if not isinstance(raw_history, list):
+            raise ValueError("'history' must be a list")
+        for step in raw_history:
+            if not isinstance(step, dict):
+                raise ValueError("'history' entries must be objects")
+            step_values = grid("values", step)
+            check_givens(step_values)
+            history.append((step_values, marks(step.get("marks"))))
+        info = data.get("info", {})
+        if not isinstance(info, dict):
+            raise ValueError("'info' must be an object")
+        game = cls(puzzle, solution, clock=clock, elapsed=number("elapsed"), info=info)
+        game.values = values
+        game.marks = marks(data.get("marks"))
+        game.history = history
+        game.hints = int(number("hints"))
+        game.checks = int(number("checks"))
+        return game
+
+    def save(self) -> str:
+        if self.saver is None:
+            return "Saving is not available here."
+        return self.saver(self)
 
     # ------------------------------------------------------- commands
 
@@ -250,6 +337,8 @@ class Game:
             return f"Elapsed: {format_seconds(self.elapsed())}"
         if cmd == "reveal":
             return self.reveal()
+        if cmd == "save":
+            return self.save()
         if cmd in ("help", "?"):
             return HELP_TEXT
         return f"Unknown command: {line.strip()}. Type help for the list."

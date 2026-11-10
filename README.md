@@ -205,6 +205,7 @@ type commands at a prompt that shows the elapsed time.
 | `check`             | list clashes and entries that differ from the answer |
 | `show`, `time`      | redraw the board, show the elapsed time              |
 | `reveal`            | show the solution and end the game                   |
+| `save`              | save the game; carry on later with `sudokit resume`  |
 | `help`, `quit`      | list commands, leave (end of input also quits)       |
 
 Givens cannot be changed. A digit that clashes with one in the same row,
@@ -252,13 +253,48 @@ No mistakes so far. 46 cell(s) to go.
 Bye.
 ```
 
+### Save and resume
+
+Type `save` during a game, quit, and pick it up later with:
+
+```sh
+sudokit resume
+```
+
+The board, pencil marks, undo history, elapsed time and the hint and check
+counts all come back. There is one save slot: saving another game replaces it,
+and finishing (or revealing) the saved game deletes it. On Linux it looks like this (`...` marks lines left out):
+
+```text
+$ printf 'r3c3 2\npencil r1c4 25\nsave\nquit\n' | sudokit play --difficulty easy --seed 1
+...
+[00:00] > save
+Saved to /home/you/.local/share/sudokit/saved.json. Carry on later with: sudokit resume
+[00:00] > quit
+Bye.
+$ sudokit resume
+sudokit: resuming easy puzzle, seed 1, 46 cell(s) to go
+...
+```
+
+The save is a small JSON file, `saved.json`, in a per-user data directory:
+
+| System  | Directory                                                   |
+|---------|-------------------------------------------------------------|
+| Windows | `%LOCALAPPDATA%\sudokit`                                    |
+| macOS   | `~/Library/Application Support/sudokit`                     |
+| other   | `$XDG_DATA_HOME/sudokit` (default `~/.local/share/sudokit`) |
+
+Set `SUDOKIT_HOME` to use another directory. `sudokit resume` with no save, or
+with a damaged one, exits with status 2 and says why.
+
 ## Exit status
 
 | Code | Meaning                                                  |
 |------|----------------------------------------------------------|
 | 0    | success                                                  |
 | 1    | the puzzle has no solution or more than one              |
-| 2    | bad arguments or unreadable puzzle input                 |
+| 2    | bad arguments, unreadable puzzle input or no saved game  |
 
 ## Development
 
@@ -271,7 +307,8 @@ pytest -q
 
 The code lives in `src/sudokit/`: `grid.py` (geometry, parsing, drawing),
 `solver.py` (propagation and search), `logic.py` (the human techniques and the
-rating), `generator.py`, `hints.py`, `game.py` (the play loop) and `cli.py`.
+rating), `generator.py`, `hints.py`, `game.py` (the play loop), `storage.py`
+(saved games) and `cli.py`.
 CI runs the tests on Ubuntu and Windows with Python 3.10, 3.12 and 3.13.
 
 See [ROADMAP.md](ROADMAP.md) for planned work.
