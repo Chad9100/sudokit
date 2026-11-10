@@ -19,6 +19,7 @@ from sudokit.logic import (
     pointing,
     rate,
     solve_logically,
+    simple_colouring,
     steps_to_next_placement,
     swordfish,
     x_wing,
@@ -245,6 +246,49 @@ def test_xyz_wing_never_removes_the_solution_digit():
         if step is None:
             break
         for s in xyz_wing(board):
+            assert all(solution[c] != d for c, d in s.eliminations)
+        board.apply(step)
+
+
+def digit_only_in(digit, cells):
+    board = empty_board()
+    for i in range(81):
+        board.cands[i] = mask(*[d for d in range(1, 10) if d != digit])
+    for i in cells:
+        board.cands[i] |= mask(digit)
+    return board
+
+
+def test_simple_colouring_trap():
+    # r1c1 and r1c3 are a conjugate pair in row 1; r2c2 sees both through box 1
+    board = digit_only_in(5, [0, 2, 10])
+    step = first(simple_colouring, board)
+    assert step.technique == "simple colouring" and step.level == EXPERT
+    assert step.eliminations == [(10, 5)]
+
+
+def test_simple_colouring_wrap():
+    # r1c1-r1c3 (row 1) and r1c3-r3c3 (column 3): r1c1 and r3c3 share colour
+    # and a box, so that colour cannot be 5
+    board = digit_only_in(5, [0, 2, 20])
+    step = first(simple_colouring, board)
+    assert sorted(step.eliminations) == [(0, 5), (20, 5)]
+    assert "both have colour" in step.explanation
+
+
+def test_simple_colouring_needs_a_chain():
+    assert first(simple_colouring, digit_only_in(5, [0, 40, 80])) is None
+
+
+def test_simple_colouring_never_removes_the_solution_digit():
+    puzzle = parse(EXPERT_PUZZLE)
+    solution = solve(puzzle).solution
+    board = Board(puzzle)
+    for _ in range(200):
+        step = next_step(board)
+        if step is None:
+            break
+        for s in simple_colouring(board):
             assert all(solution[c] != d for c, d in s.eliminations)
         board.apply(step)
 

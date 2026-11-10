@@ -444,6 +444,72 @@ def xyz_wing(board: Board) -> Iterator[Step]:
                 )
 
 
+def simple_colouring(board: Board) -> Iterator[Step]:
+    """Single-digit chains: colour cells linked by conjugate pairs."""
+    for d in range(1, 10):
+        bit = 1 << d
+        links: dict[int, list[int]] = {}
+        for unit in UNITS:
+            places = [i for i in unit if board.cands[i] & bit]
+            if len(places) == 2 and not any(board.values[i] == d for i in unit):
+                a, b = places
+                links.setdefault(a, []).append(b)
+                links.setdefault(b, []).append(a)
+        seen: set[int] = set()
+        for start in sorted(links):
+            if start in seen:
+                continue
+            colour = {start: 0}
+            stack = [start]
+            while stack:
+                cur = stack.pop()
+                for nxt in links[cur]:
+                    if nxt not in colour:
+                        colour[nxt] = 1 - colour[cur]
+                        stack.append(nxt)
+            seen.update(colour)
+            groups = [[i for i in sorted(colour) if colour[i] == c] for c in (0, 1)]
+            names = ("A", "B")
+            chain = (
+                f"{d}-chain of {cell_names(sorted(colour))} "
+                f"(colour A: {cell_names(groups[0])}; colour B: {cell_names(groups[1])})"
+            )
+            # colour wrap: two cells of one colour see each other
+            for c in (0, 1):
+                g = groups[c]
+                clash = next(
+                    ((x, y) for x, y in combinations(g, 2) if y in PEERS[x]), None
+                )
+                if clash:
+                    elims = [(i, d) for i in g]
+                    yield Step(
+                        "simple colouring",
+                        EXPERT,
+                        f"In the {chain}, {cell_name(clash[0])} and "
+                        f"{cell_name(clash[1])} both have colour {names[c]} and see "
+                        f"each other, so colour {names[c]} cannot be {d}; "
+                        f"{_elim_text(elims)}.",
+                        eliminations=elims,
+                    )
+            # colour trap: an outside cell sees both colours
+            elims = [
+                (i, d)
+                for i in range(81)
+                if board.cands[i] & bit
+                and i not in colour
+                and any(p in PEERS[i] for p in groups[0])
+                and any(p in PEERS[i] for p in groups[1])
+            ]
+            if elims:
+                yield Step(
+                    "simple colouring",
+                    EXPERT,
+                    f"In the {chain}, exactly one colour is {d}, and each "
+                    f"of these cells sees both colours; {_elim_text(elims)}.",
+                    eliminations=elims,
+                )
+
+
 Technique = Callable[[Board], Iterator[Step]]
 
 #: Every technique, simplest first.
@@ -464,6 +530,7 @@ TECHNIQUES: list[Technique] = [
     swordfish,
     naked_quad,
     hidden_quad,
+    simple_colouring,
 ]
 _TECHNIQUE_LEVEL = {
     hidden_single_box: EASY,
@@ -482,6 +549,7 @@ _TECHNIQUE_LEVEL = {
     swordfish: EXPERT,
     naked_quad: EXPERT,
     hidden_quad: EXPERT,
+    simple_colouring: EXPERT,
 }
 
 
