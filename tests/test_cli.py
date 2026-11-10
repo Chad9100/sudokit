@@ -109,6 +109,16 @@ def test_rate():
     assert run("rate", "." * 81)[0] == 1
 
 
+def test_rate_expert_puzzle_solved_by_swordfish():
+    # sudokit-made (grid filler and clue removal, seed 93)
+    fish = "5721.....9.........1.562......3.756...7.9.3...632.5......951.4.........6.....6895"
+    code, out, _ = run("rate", fish)
+    assert code == 0
+    lines = out.splitlines()
+    assert lines[0] == "Difficulty: expert"
+    assert "swordfish x1" in lines[2]
+
+
 def test_hint_command():
     code, out, _ = run("hint", PUZZLE)
     assert code == 0 and "Next: r" in out

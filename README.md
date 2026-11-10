@@ -87,7 +87,7 @@ first:
 | easy   | naked singles and hidden singles only (and at least 34 clues)       |
 | medium | pointing pairs/triples, box/line reduction, naked and hidden pairs  |
 | hard   | naked and hidden triples, X-wing, XY-wing                           |
-| expert | none of the above is enough; needs trial and error (rated only)     |
+| expert | swordfish, or none of the techniques is enough and the rest needs trial and error (rated only) |
 
 The generator removes clues in symmetric pairs and keeps a removal only while
 the puzzle can still be solved by logic at or below the target level. That
@@ -105,6 +105,24 @@ Difficulty: expert (needs more than the techniques sudokit knows)
 Clues: 24
 Techniques: hidden single x12, pointing pair x3, pointing triple x1, box/line reduction x1, naked pair x1, hidden pair x2
 ```
+
+An expert puzzle that logic still finishes gets no "needs more" note. This
+one came out of sudokit's grid filler and symmetric clue removal (seed 93)
+and needs a single swordfish, which `solve --explain` and `hint` spell out:
+
+```text
+$ sudokit rate 5721.....9.........1.562......3.756...7.9.3...632.5......951.4.........6.....6895
+Difficulty: expert
+Clues: 29
+Techniques: hidden single x48, naked single x4, pointing pair x3, box/line reduction x1, hidden pair x1, swordfish x1, XY-wing x1
+$ sudokit solve 5721.....9.........1.562......3.756...7.9.3...632.5......951.4.........6.....6895 --explain
+...
+29. Swordfish: In rows 1, 3 and 6, the digit 8 can only go in columns 1, 5 and 8 (r1c5, r1c8, r3c1, r3c8, r6c1, r6c5). Each of those rows needs its own 8 there, which uses up the 8 of all three columns, so remove 8 from r2c5, r4c1, r4c5, r5c1, r8c5.
+...
+```
+
+The `...` lines stand for the other steps and the solved grid, left out here.
+`generate` does not make expert puzzles yet (see the roadmap).
 
 ### Solve
 

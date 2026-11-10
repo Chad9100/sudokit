@@ -23,7 +23,7 @@ from .grid import (
     to_line,
 )
 from .hints import describe, hint_text
-from .logic import EXPERT, rate, solve_logically
+from .logic import rate, solve_logically
 from .solver import solve
 from .stats import format_summary, summarize
 from .storage import (
@@ -138,7 +138,7 @@ def cmd_rate(args, stdin, out, err) -> int:
         return EXIT_UNSOLVED
     rating = rate(cells)
     line = f"Difficulty: {rating.name}"
-    if rating.level == EXPERT:
+    if not rating.solved:
         line += " (needs more than the techniques sudokit knows)"
     out.write(line + "\n")
     out.write(f"Clues: {clue_count(cells)}\n")

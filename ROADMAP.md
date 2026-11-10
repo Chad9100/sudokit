@@ -25,7 +25,10 @@ Estimates are rough working hours for one person.
 
 ## v0.3: more techniques (about 5 h)
 
-- [ ] Swordfish and finned X-wing
+- [x] Swordfish (rows and columns), rated expert; `rate`, `hint` and
+      `solve --explain` use it, and an expert puzzle that logic finishes no
+      longer says it needs trial and error
+- [ ] Finned X-wing (split out of the swordfish item)
 - [ ] XYZ-wing and simple colouring (single-digit chains)
 - [ ] Hidden/naked quads
 - [ ] An `expert` generator level built on these, with a time budget and a

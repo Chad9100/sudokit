@@ -18,6 +18,7 @@ from sudokit.logic import (
     rate,
     solve_logically,
     steps_to_next_placement,
+    swordfish,
     x_wing,
     xy_wing,
 )
@@ -27,6 +28,9 @@ EASY_PUZZLE = "3.9...5..86579..4..4...8679.5.......7.4...8.1.......5.5231...9..9
 MEDIUM_PUZZLE = ".536......7...9..66.4...93.49.1...5.....8.....6...4.82.36...2.55..9...1......364."
 HARD_PUZZLE = "...8..2.........814..2.75..1.....34..7..3..6..36.....9..26.4..898.........1..9..."
 EXPERT_PUZZLE = "..6.1.......7..5..84....9.24..3....8...29...3..5.......82..5......82...631...7..."
+# Made by sudokit's own grid filler and symmetric clue removal (seed 93);
+# logic solves it, but only with one swordfish on 8 in rows 1, 3 and 6.
+SWORDFISH_PUZZLE = "5721.....9.........1.562......3.756...7.9.3...632.5......951.4.........6.....6895"
 
 
 def mask(*digits):
@@ -141,6 +145,59 @@ def test_x_wing_on_rows():
     assert cells == {r * 9 + c for r in range(9) if r not in (0, 4) for c in (1, 7)}
 
 
+def keep_only(board, digit, lines):
+    """Strip ``digit`` from each listed row except in the allowed columns."""
+    for row, cols in lines:
+        for col in range(9):
+            if col not in cols:
+                board.cands[row * 9 + col] &= ~mask(digit)
+
+
+def test_swordfish_on_rows():
+    board = empty_board()
+    # 6 in rows 1, 4 and 8 only in columns 2, 5 and 9, two spots per row
+    keep_only(board, 6, [(0, (1, 4)), (3, (4, 8)), (7, (1, 8))])
+    step = first(swordfish, board)
+    assert step.technique == "swordfish" and step.level == EXPERT
+    assert all(digit == 6 for _, digit in step.eliminations)
+    cells = {cell for cell, _ in step.eliminations}
+    assert cells == {r * 9 + c for r in range(9) if r not in (0, 3, 7) for c in (1, 4, 8)}
+    assert step.explanation.startswith(
+        "In rows 1, 4 and 8, the digit 6 can only go in columns 2, 5 and 9"
+    )
+
+
+def test_swordfish_on_columns():
+    board = empty_board()
+    for col, rows in ((2, (0, 5)), (4, (0, 5, 6)), (7, (5, 6))):
+        for row in range(9):
+            if row not in rows:
+                board.cands[row * 9 + col] &= ~mask(3)
+    step = first(swordfish, board)
+    assert step.explanation.startswith(
+        "In columns 3, 5 and 8, the digit 3 can only go in rows 1, 6 and 7"
+    )
+    assert {cell for cell, _ in step.eliminations} == {
+        r * 9 + c for r in (0, 5, 6) for c in range(9) if c not in (2, 4, 7)
+    }
+
+
+def test_swordfish_needs_exactly_three_columns():
+    board = empty_board()
+    # the three rows spread over four columns: no swordfish
+    keep_only(board, 6, [(0, (1, 4)), (3, (4, 8)), (7, (1, 6))])
+    assert first(swordfish, board) is None
+
+
+def test_swordfish_puzzle_is_expert_but_solved():
+    result = solve_logically(parse(SWORDFISH_PUZZLE))
+    assert result.solved and result.level == EXPERT
+    assert result.technique_counts()["swordfish"] == 1
+    rating = rate(parse(SWORDFISH_PUZZLE))
+    assert rating.name == "expert" and rating.solved
+    assert not solve_logically(parse(SWORDFISH_PUZZLE), max_level=HARD).solved
+
+
 def test_xy_wing():
     board = empty_board()
     board.cands[0] = mask(1, 2)   # pivot r1c1
@@ -170,6 +227,7 @@ def test_hard_rating_lists_the_hard_technique():
 def test_expert_puzzle_gets_stuck():
     result = solve_logically(parse(EXPERT_PUZZLE))
     assert not result.solved and result.level == EXPERT
+    assert not rate(parse(EXPERT_PUZZLE)).solved
 
 
 def test_max_level_limits_techniques():
@@ -177,7 +235,9 @@ def test_max_level_limits_techniques():
     assert solve_logically(parse(MEDIUM_PUZZLE), max_level=MEDIUM).solved
 
 
-@pytest.mark.parametrize("puzzle", [EASY_PUZZLE, MEDIUM_PUZZLE, HARD_PUZZLE, EXPERT_PUZZLE])
+@pytest.mark.parametrize(
+    "puzzle", [EASY_PUZZLE, MEDIUM_PUZZLE, HARD_PUZZLE, EXPERT_PUZZLE, SWORDFISH_PUZZLE]
+)
 def test_every_step_agrees_with_the_solution(puzzle):
     cells = parse(puzzle)
     solution = solve(cells).solution

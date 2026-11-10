@@ -290,6 +290,45 @@ def x_wing(board: Board) -> Iterator[Step]:
                     )
 
 
+def swordfish(board: Board) -> Iterator[Step]:
+    """An X-wing grown to three lines: in three rows a digit's spots all fall
+    in the same three columns (or the other way round)."""
+    for kind, other, lines, cross, pos in (
+        ("rows", "columns", ROWS, COLS, col_of),
+        ("columns", "rows", COLS, ROWS, row_of),
+    ):
+        for d in range(1, 10):
+            bit = 1 << d
+            spots = {}
+            for n, line in enumerate(lines):
+                places = [i for i in line if board.cands[i] & bit]
+                if 2 <= len(places) <= 3:
+                    spots[n] = {pos(i) for i in places}
+            for base in combinations(sorted(spots), 3):
+                covers = sorted(set().union(*(spots[n] for n in base)))
+                if len(covers) != 3:
+                    continue
+                corners = [i for n in base for i in lines[n] if board.cands[i] & bit]
+                elims = [
+                    (i, d)
+                    for x in covers
+                    for i in cross[x]
+                    if i not in corners and board.cands[i] & bit
+                ]
+                if elims:
+                    b1, b2, b3 = (n + 1 for n in base)
+                    c1, c2, c3 = (x + 1 for x in covers)
+                    yield Step(
+                        "swordfish",
+                        EXPERT,
+                        f"In {kind} {b1}, {b2} and {b3}, the digit {d} can only go in "
+                        f"{other} {c1}, {c2} and {c3} ({cell_names(corners)}). Each of "
+                        f"those {kind} needs its own {d} there, which uses up the {d} "
+                        f"of all three {other}, so {_elim_text(elims)}.",
+                        eliminations=elims,
+                    )
+
+
 def xy_wing(board: Board) -> Iterator[Step]:
     bivalue = [i for i in range(81) if POPCOUNT[board.cands[i]] == 2]
     for pivot in bivalue:
@@ -329,6 +368,7 @@ TECHNIQUES: list[Technique] = [
     hidden_triple,
     x_wing,
     xy_wing,
+    swordfish,
 ]
 _TECHNIQUE_LEVEL = {
     hidden_single_box: EASY,
@@ -342,10 +382,11 @@ _TECHNIQUE_LEVEL = {
     hidden_triple: HARD,
     x_wing: HARD,
     xy_wing: HARD,
+    swordfish: EXPERT,
 }
 
 
-def next_step(board: Board, max_level: int = HARD) -> Step | None:
+def next_step(board: Board, max_level: int = EXPERT) -> Step | None:
     """The simplest available step, or None when nothing applies."""
     for technique in TECHNIQUES:
         if _TECHNIQUE_LEVEL[technique] > max_level:
@@ -363,7 +404,9 @@ class LogicResult:
 
     @property
     def level(self) -> int:
-        """Difficulty level: the hardest technique used, EXPERT if stuck."""
+        """Difficulty level: the hardest technique used, EXPERT if stuck
+        (expert puzzles are either solved with an expert technique such as a
+        swordfish, or need more than sudokit knows)."""
         if not self.solved:
             return EXPERT
         return max((s.level for s in self.steps), default=EASY)
@@ -375,7 +418,7 @@ class LogicResult:
         return counts
 
 
-def solve_logically(cells: Sequence[int], max_level: int = HARD) -> LogicResult:
+def solve_logically(cells: Sequence[int], max_level: int = EXPERT) -> LogicResult:
     """Apply steps until solved or stuck. Raises ValueError on a broken grid."""
     board = Board(cells)
     steps: list[Step] = []
@@ -396,16 +439,20 @@ class Rating:
     name: str
     techniques: dict[str, int]
     steps: int
+    #: False when logic got stuck and the rest needs trial and error.
+    solved: bool = True
 
 
 def rate(cells: Sequence[int]) -> Rating:
     """Difficulty of a puzzle (assumed to have a unique solution)."""
     result = solve_logically(cells)
     level = result.level
-    return Rating(level, LEVEL_NAMES[level], result.technique_counts(), len(result.steps))
+    return Rating(
+        level, LEVEL_NAMES[level], result.technique_counts(), len(result.steps), result.solved
+    )
 
 
-def steps_to_next_placement(cells: Sequence[int], max_level: int = HARD) -> tuple[list[Step], bool]:
+def steps_to_next_placement(cells: Sequence[int], max_level: int = EXPERT) -> tuple[list[Step], bool]:
     """Steps from ``cells`` up to and including the next placed digit.
 
     Returns ``(steps, found)``; ``found`` is False if logic got stuck before
