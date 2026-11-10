@@ -15,13 +15,13 @@ Estimates are rough working hours for one person.
 - [x] `sudokit play`: placements, pencil marks, undo, hint, check, timer, reveal
 - [x] pytest suite; CI on Ubuntu and Windows
 
-## v0.2: saved games and stats (about 4 h)
+## v0.2: saved games and stats (done)
 
 - [x] `save` command and `sudokit resume`, JSON in a per-user data dir with a
       `SUDOKIT_HOME` override
 - [x] Finished games logged (difficulty, seed, time, hints, checks) to
       `history.jsonl`
-- [ ] `sudokit stats`: games per level, best and median times, hint-free streak
+- [x] `sudokit stats`: games per level, best and median times, hint-free streak
 
 ## v0.3: more techniques (about 5 h)
 
@@ -54,4 +54,4 @@ Estimates are rough working hours for one person.
 - [ ] Shell completion scripts and a review of every `--help` text
 - [ ] Profile the generator and cut hard-puzzle time in half
 
-**Total for v0.2 to v1.0: about 20 hours.**
+**Total for v0.3 to v1.0: about 16 hours.**

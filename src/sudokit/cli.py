@@ -25,10 +25,12 @@ from .grid import (
 from .hints import describe, hint_text
 from .logic import EXPERT, rate, solve_logically
 from .solver import solve
+from .stats import format_summary, summarize
 from .storage import (
     SaveError,
     append_history,
     history_path,
+    read_history,
     read_save,
     remove_save,
     save_path,
@@ -261,6 +263,21 @@ def cmd_resume(args, stdin, out, err) -> int:
     return _run_game(game, stdin, out, header)
 
 
+def cmd_stats(args, stdin, out, err) -> int:
+    path = history_path()
+    try:
+        records, bad = read_history(path)
+    except (OSError, UnicodeDecodeError) as exc:
+        raise InputError(f"cannot read the history in {path}: {exc}") from None
+    if bad:
+        err.write(f"sudokit: skipped {bad} unreadable line(s) in {path}\n")
+    if not records:
+        out.write(f"No finished games yet (the history is kept in {path}).\n")
+        return EXIT_OK
+    out.write(format_summary(summarize(records)) + "\n")
+    return EXIT_OK
+
+
 # ---------------------------------------------------------------- parser
 
 
@@ -304,6 +321,9 @@ def build_parser() -> argparse.ArgumentParser:
 
     p = sub.add_parser("resume", help="carry on with the game you saved in play")
     p.set_defaults(func=cmd_resume)
+
+    p = sub.add_parser("stats", help="games per level, best and median times, hint-free streak")
+    p.set_defaults(func=cmd_stats)
     return parser
 
 

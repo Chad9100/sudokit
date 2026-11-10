@@ -304,6 +304,35 @@ time, hints and checks from before the save included. A real line (from
 are `null` for a game started with `--puzzle`. If the file cannot be written
 the game still ends normally, with a one-line warning.
 
+### Stats
+
+```sh
+sudokit stats
+```
+
+Sums up the history: games solved and revealed per level (`own` is games
+started with `--puzzle`), the best and median solving times per level, and
+the hint-free streak, which is how many games in a row, up to the latest one,
+you solved without a hint (checks are fine; a hint or a reveal resets it),
+with your best streak so far. Revealed games do not count towards the times.
+Real output after four games (piped in, hence the zero times): an easy game
+solved, another solved with a hint, a medium game revealed, then one more easy
+game solved:
+
+```text
+$ sudokit stats
+Games: 4 (3 solved, 1 revealed)
+
+Level   Solved  Revealed   Best  Median
+easy         3         0  00:00   00:00
+medium       0         1      -       -
+
+Hint-free streak: 1 (best 1)
+```
+
+With no history yet it says so and exits with status 0. Damaged lines in
+`history.jsonl` are skipped with a note on stderr.
+
 ## Exit status
 
 | Code | Meaning                                                  |
@@ -324,7 +353,7 @@ pytest -q
 The code lives in `src/sudokit/`: `grid.py` (geometry, parsing, drawing),
 `solver.py` (propagation and search), `logic.py` (the human techniques and the
 rating), `generator.py`, `hints.py`, `game.py` (the play loop), `storage.py`
-(saved games and history) and `cli.py`.
+(saved games and history), `stats.py` (history summaries) and `cli.py`.
 CI runs the tests on Ubuntu and Windows with Python 3.10, 3.12 and 3.13.
 
 See [ROADMAP.md](ROADMAP.md) for planned work.
