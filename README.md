@@ -86,7 +86,7 @@ first:
 |--------|---------------------------------------------------------------------|
 | easy   | naked singles and hidden singles only (and at least 34 clues)       |
 | medium | pointing pairs/triples, box/line reduction, naked and hidden pairs  |
-| hard   | naked and hidden triples, X-wing, finned X-wing, XY-wing            |
+| hard   | naked and hidden triples, X-wing, finned X-wing, XY-wing, XYZ-wing  |
 | expert | swordfish, or none of the techniques is enough and the rest needs trial and error (rated only) |
 
 The generator removes clues in symmetric pairs and keeps a removal only while

@@ -30,7 +30,8 @@ Estimates are rough working hours for one person.
       longer says it needs trial and error
 - [x] Finned X-wing (rows and columns, fins in one corner's box), rated hard;
       used by `rate`, `hint`, `solve --explain` and the hard generator
-- [ ] XYZ-wing and simple colouring (single-digit chains)
+- [x] XYZ-wing (rated hard); used by `rate`, `hint`, `solve --explain`
+- [ ] Simple colouring (single-digit chains)
 - [ ] Hidden/naked quads
 - [ ] An `expert` generator level built on these, with a time budget and a
       clear message when no puzzle is found in time

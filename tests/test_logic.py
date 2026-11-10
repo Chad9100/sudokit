@@ -21,6 +21,7 @@ from sudokit.logic import (
     swordfish,
     x_wing,
     xy_wing,
+    xyz_wing,
 )
 from sudokit.solver import solve
 
@@ -206,6 +207,44 @@ def test_xy_wing():
     step = first(xy_wing, board)
     assert step.technique == "XY-wing"
     assert step.eliminations == [(40, 3)]  # r5c5 sees both wings
+
+
+def test_xyz_wing():
+    board = empty_board()
+    board.cands[0] = mask(1, 2, 3)   # pivot r1c1
+    board.cands[1] = mask(1, 3)      # r1c2 (same row and box)
+    board.cands[9] = mask(2, 3)      # r2c1 (same column and box)
+    board.cands[10] = mask(3, 5)     # r2c2 sees pivot and both wings
+    board.cands[4] = mask(3, 5)      # r1c5 sees only the pivot and one wing
+    step = first(xyz_wing, board)
+    assert step.technique == "XYZ-wing" and step.level == HARD
+    # every cell of box 1 holding a 3 sees all three; r1c5 does not
+    assert (10, 3) in step.eliminations
+    assert (4, 3) not in step.eliminations
+    box = {0, 1, 2, 9, 10, 11, 18, 19, 20}
+    assert all(cell in box and digit == 3 for cell, digit in step.eliminations)
+
+
+def test_xyz_wing_needs_wings_inside_the_pivot():
+    board = empty_board()
+    board.cands[0] = mask(1, 2, 3)
+    board.cands[1] = mask(1, 4)
+    board.cands[9] = mask(2, 4)
+    board.cands[10] = mask(4, 5)
+    assert first(xyz_wing, board) is None
+
+
+def test_xyz_wing_never_removes_the_solution_digit():
+    puzzle = parse(HARD_PUZZLE)
+    solution = solve(puzzle).solution
+    board = Board(puzzle)
+    for _ in range(200):
+        step = next_step(board, max_level=HARD)
+        if step is None:
+            break
+        for s in xyz_wing(board):
+            assert all(solution[c] != d for c, d in s.eliminations)
+        board.apply(step)
 
 
 # ------------------------------------------------------------ rating

@@ -406,6 +406,36 @@ def xy_wing(board: Board) -> Iterator[Step]:
                 )
 
 
+def xyz_wing(board: Board) -> Iterator[Step]:
+    """Pivot x/y/z with wings x/z and y/z: any cell seeing all three cannot be z."""
+    for pivot in range(81):
+        pm = board.cands[pivot]
+        if POPCOUNT[pm] != 3:
+            continue
+        wings = [
+            i for i in sorted(PEERS[pivot])
+            if POPCOUNT[board.cands[i]] == 2 and board.cands[i] & ~pm == 0
+        ]
+        for w1, w2 in combinations(wings, 2):
+            m1, m2 = board.cands[w1], board.cands[w2]
+            z = m1 & m2
+            if POPCOUNT[z] != 1 or (m1 | m2) != pm:
+                continue
+            d = digits_of(z)[0]
+            seen = PEERS[pivot] & PEERS[w1] & PEERS[w2]
+            elims = [(i, d) for i in sorted(seen) if board.cands[i] & z]
+            if elims:
+                yield Step(
+                    "XYZ-wing",
+                    HARD,
+                    f"{cell_name(pivot)} is {_digits_text(pm)}, with wings "
+                    f"{cell_name(w1)} ({_digits_text(m1)}) and {cell_name(w2)} "
+                    f"({_digits_text(m2)}); one of the three cells must be {d}, "
+                    f"so {_elim_text(elims)}.",
+                    eliminations=elims,
+                )
+
+
 Technique = Callable[[Board], Iterator[Step]]
 
 #: Every technique, simplest first.
@@ -422,6 +452,7 @@ TECHNIQUES: list[Technique] = [
     x_wing,
     finned_x_wing,
     xy_wing,
+    xyz_wing,
     swordfish,
 ]
 _TECHNIQUE_LEVEL = {
@@ -437,6 +468,7 @@ _TECHNIQUE_LEVEL = {
     x_wing: HARD,
     finned_x_wing: HARD,
     xy_wing: HARD,
+    xyz_wing: HARD,
     swordfish: EXPERT,
 }
 
