@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import datetime as dt
 import io
 import os
 import random
@@ -24,7 +25,15 @@ from .grid import (
 from .hints import describe, hint_text
 from .logic import EXPERT, rate, solve_logically
 from .solver import solve
-from .storage import SaveError, read_save, remove_save, save_path, write_save
+from .storage import (
+    SaveError,
+    append_history,
+    history_path,
+    read_save,
+    remove_save,
+    save_path,
+    write_save,
+)
 
 EXIT_OK, EXIT_UNSOLVED, EXIT_USAGE = 0, 1, 2
 
@@ -196,8 +205,24 @@ def _describe_saved(game: Game) -> str:
     return f"{what}, {game.values.count(0)} cell(s) to go"
 
 
+def _utc_now() -> str:
+    return dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def _log_finished(game: Game, out: TextIO) -> None:
+    record = {"finished": _utc_now(), **game.result()}
+    try:
+        append_history(record, history_path())
+    except OSError as exc:
+        out.write(f"Could not record the game in the history: {exc}\n")
+
+
 def _run_game(game: Game, stdin: TextIO, out: TextIO, header: str) -> int:
-    """Play ``game`` with saving wired up; a finished game clears its save."""
+    """Play ``game`` with saving wired up.
+
+    A finished game (solved or revealed) is logged to the history and clears
+    its save.
+    """
     path = save_path()
 
     def saver(g: Game) -> str:
@@ -213,6 +238,7 @@ def _run_game(game: Game, stdin: TextIO, out: TextIO, header: str) -> int:
         stdin = io.TextIOWrapper(stdin.buffer, encoding="utf-8-sig", errors="replace")
     status = play(game, stdin, out, echo=not interactive, header=header)
     if game.over():
+        _log_finished(game, out)
         try:
             saved = read_save(path)
         except SaveError:

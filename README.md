@@ -288,6 +288,22 @@ The save is a small JSON file, `saved.json`, in a per-user data directory:
 Set `SUDOKIT_HOME` to use another directory. `sudokit resume` with no save, or
 with a damaged one, exits with status 2 and says why.
 
+### Game history
+
+Every game that ends on the board, solved or revealed, is added as one line
+of JSON to `history.jsonl` in the same directory. Quitting, with or without a
+save, logs nothing; a resumed game is logged when you finish it, with the
+time, hints and checks from before the save included. A real line (from
+`sudokit play -d easy --seed 1`, solved with one hint):
+
+```text
+{"version":1,"finished":"2026-11-10T14:39:27Z","difficulty":"easy","seed":1,"puzzle":"639..1.....8..7..91..94..369.3....8..2.6.3.9..6....3.779..25..32..8..9.....7..425","seconds":0.0,"hints":1,"checks":0,"revealed":false}
+```
+
+`finished` is UTC, `seconds` the playing time, and `difficulty` and `seed`
+are `null` for a game started with `--puzzle`. If the file cannot be written
+the game still ends normally, with a one-line warning.
+
 ## Exit status
 
 | Code | Meaning                                                  |
@@ -308,7 +324,7 @@ pytest -q
 The code lives in `src/sudokit/`: `grid.py` (geometry, parsing, drawing),
 `solver.py` (propagation and search), `logic.py` (the human techniques and the
 rating), `generator.py`, `hints.py`, `game.py` (the play loop), `storage.py`
-(saved games) and `cli.py`.
+(saved games and history) and `cli.py`.
 CI runs the tests on Ubuntu and Windows with Python 3.10, 3.12 and 3.13.
 
 See [ROADMAP.md](ROADMAP.md) for planned work.

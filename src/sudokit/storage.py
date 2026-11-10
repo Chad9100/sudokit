@@ -1,8 +1,9 @@
 """Saved games: where they live and how they are read and written.
 
 A game in progress is kept as one JSON file, ``saved.json``, in a per-user
-data directory. ``SUDOKIT_HOME`` overrides the directory (handy for tests and
-for keeping several sets of saves apart).
+data directory, and every finished game is appended as one JSON line to
+``history.jsonl`` next to it. ``SUDOKIT_HOME`` overrides the directory (handy
+for tests and for keeping several sets of saves apart).
 """
 
 from __future__ import annotations
@@ -15,6 +16,7 @@ from typing import Any, Mapping
 
 FORMAT_VERSION = 1
 SAVE_NAME = "saved.json"
+HISTORY_NAME = "history.jsonl"
 
 
 class SaveError(Exception):
@@ -39,6 +41,10 @@ def data_dir(env: Mapping[str, str] | None = None, platform: str | None = None) 
 
 def save_path(env: Mapping[str, str] | None = None) -> Path:
     return data_dir(env) / SAVE_NAME
+
+
+def history_path(env: Mapping[str, str] | None = None) -> Path:
+    return data_dir(env) / HISTORY_NAME
 
 
 def write_save(data: dict[str, Any], path: Path) -> None:
@@ -72,3 +78,39 @@ def remove_save(path: Path) -> None:
         path.unlink()
     except FileNotFoundError:
         pass
+
+
+def append_history(record: dict[str, Any], path: Path) -> None:
+    """Add one finished game to the history file (one JSON object per line)."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    line = json.dumps({"version": FORMAT_VERSION, **record}, separators=(",", ":"))
+    with open(path, "a", encoding="utf-8", newline="\n") as fh:
+        fh.write(line + "\n")
+
+
+def read_history(path: Path) -> tuple[list[dict[str, Any]], int]:
+    """The logged games, oldest first, and how many lines were unreadable.
+
+    A missing file is an empty history. Damaged or foreign lines (for example
+    a line cut short when the disk filled up) are skipped and counted, so one
+    bad line never hides the rest.
+    """
+    try:
+        with open(path, encoding="utf-8-sig") as fh:
+            lines = fh.readlines()
+    except FileNotFoundError:
+        return [], 0
+    records, bad = [], 0
+    for line in lines:
+        if not line.strip():
+            continue
+        try:
+            data = json.loads(line)
+        except ValueError:
+            bad += 1
+            continue
+        if not isinstance(data, dict) or data.get("version") != FORMAT_VERSION:
+            bad += 1
+            continue
+        records.append(data)
+    return records, bad

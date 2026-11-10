@@ -19,7 +19,8 @@ Estimates are rough working hours for one person.
 
 - [x] `save` command and `sudokit resume`, JSON in a per-user data dir with a
       `SUDOKIT_HOME` override
-- [ ] Finished games logged (difficulty, seed, time, hints, checks)
+- [x] Finished games logged (difficulty, seed, time, hints, checks) to
+      `history.jsonl`
 - [ ] `sudokit stats`: games per level, best and median times, hint-free streak
 
 ## v0.3: more techniques (about 5 h)

@@ -185,6 +185,18 @@ class Game:
         game.checks = int(number("checks"))
         return game
 
+    def result(self) -> dict[str, Any]:
+        """What to log about a finished game (see ``storage.append_history``)."""
+        return {
+            "difficulty": self.info.get("difficulty"),
+            "seed": self.info.get("seed"),
+            "puzzle": to_line(self.puzzle),
+            "seconds": round(self.elapsed(), 1),
+            "hints": self.hints,
+            "checks": self.checks,
+            "revealed": self.revealed,
+        }
+
     def save(self) -> str:
         if self.saver is None:
             return "Saving is not available here."
