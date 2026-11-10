@@ -36,7 +36,9 @@ Estimates are rough working hours for one person.
       `hint` and `solve --explain`
 - [ ] An `expert` generator level built on these, with a time budget and a
       clear message when no puzzle is found in time
-- [ ] A fixed benchmark set of rated puzzles to catch rating regressions
+- [x] A fixed benchmark set of rated puzzles to catch rating regressions
+      (`tests/data/benchmark.txt`, easy/medium/hard; expert entries to be added
+      once the expert generator exists)
 
 ## v0.4: nicer terminal play (about 4 h)
 

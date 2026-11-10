@@ -382,6 +382,8 @@ The code lives in `src/sudokit/`: `grid.py` (geometry, parsing, drawing),
 `solver.py` (propagation and search), `logic.py` (the human techniques and the
 rating), `generator.py`, `hints.py`, `game.py` (the play loop), `storage.py`
 (saved games and history), `stats.py` (history summaries) and `cli.py`.
+`tests/data/benchmark.txt` is a fixed set of generated puzzles with their
+levels; `tests/test_benchmark.py` fails if a logic change shifts any rating.
 CI runs the tests on Ubuntu and Windows with Python 3.10, 3.12 and 3.13.
 
 See [ROADMAP.md](ROADMAP.md) for planned work.
