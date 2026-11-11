@@ -289,7 +289,20 @@ no known technique applies, it names the most constrained cell and its value.
 
 ```sh
 sudokit play [--difficulty easy|medium|hard] [--seed N] [--puzzle PUZZLE]
-             [--daily] [--date YYYY-MM-DD]
+             [--daily] [--date YYYY-MM-DD] [--color auto|always|never]
+```
+
+`--color` draws the board in colour: givens in bold, your own entries in cyan,
+and every cell that clashes with another (same digit twice in a row, column or
+box) in bold red. `auto` (the default) colours only a terminal and stays plain
+when `NO_COLOR` is set or `TERM=dumb`; `always` forces it, `never` turns it off.
+`sudokit resume` takes the same option. Real output of
+`sudokit play --puzzle 3.9...5..86579..4..4...8679.5.......7.4...8.1.......5.5231...9..9..52183..6...7.5 --color always`
+after typing `r1c2 3`, shown with the escape characters written as `ESC`
+(row 1 of the board; the second 3 clashes with the given 3):
+
+```text
+1 | ESC[1;31m3ESC[0m ESC[1;31m3ESC[0m ESC[1m9ESC[0m | . . . | ESC[1m5ESC[0m . . |
 ```
 
 A line-based game: the board is drawn with row and column numbers and you

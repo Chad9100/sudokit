@@ -28,7 +28,12 @@ Commands:
   help            show this help
   quit            leave the game (Ctrl+D / Ctrl+Z also works)"""
 
-_PLACE = re.compile(r"^r\s*([1-9])\s*c\s*([1-9])\s*(?:=\s*|\s+)([0-9.])$")
+#: ANSI codes for the coloured board: givens bold, your entries cyan, clashes red.
+GIVEN_STYLE = "1"
+ENTRY_STYLE = "36"
+CLASH_STYLE = "1;31"
+
+_PLACE =re.compile(r"^r\s*([1-9])\s*c\s*([1-9])\s*(?:=\s*|\s+)([0-9.])$")
 _SHORT = re.compile(r"^([1-9])([1-9])([0-9.])$")
 _CELL = re.compile(r"^r\s*([1-9])\s*c\s*([1-9])$")
 
@@ -73,6 +78,8 @@ class Game:
         self.info: dict[str, Any] = dict(info or {})
         #: Called by the ``save`` command; returns the reply to show.
         self.saver: Callable[[Game], str] | None = None
+        #: Draw the board with ANSI colours (see ``use_color`` in the CLI).
+        self.color = False
 
     # ---------------------------------------------------------- state
 
@@ -94,7 +101,16 @@ class Game:
         self.redo_stack.clear()
 
     def board_text(self) -> str:
-        return format_grid(self.values, labels=True)
+        if not self.color:
+            return format_grid(self.values, labels=True)
+        styles: dict[int, str] = {}
+        for i in range(81):
+            if self.values[i]:
+                styles[i] = GIVEN_STYLE if self.is_given(i) else ENTRY_STYLE
+        for _name, _digit, cells in find_conflicts(self.values):
+            for c in cells:
+                styles[c] = CLASH_STYLE
+        return format_grid(self.values, labels=True, styles=styles)
 
     def marks_text(self) -> str:
         """Every cell as its pencil marks (filled cells in brackets), 9x9."""

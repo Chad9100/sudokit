@@ -306,7 +306,7 @@ def cmd_play(args, stdin, out, err) -> int:
         cells, solution = puzzle.cells, puzzle.solution
         info = {"difficulty": puzzle.difficulty, "seed": seed}
         header = f"sudokit: {puzzle.difficulty} puzzle, seed {seed}, {puzzle.clues} clues"
-    return _run_game(Game(cells, solution, info=info), stdin, out, header)
+    return _run_game(Game(cells, solution, info=info), stdin, out, header, args.color)
 
 
 def _describe_saved(game: Game) -> str:
@@ -330,12 +330,30 @@ def _log_finished(game: Game, out: TextIO) -> None:
         out.write(f"Could not record the game in the history: {exc}\n")
 
 
-def _run_game(game: Game, stdin: TextIO, out: TextIO, header: str) -> int:
+def use_color(mode: str, out: TextIO, environ=None) -> bool:
+    """Whether to colour output: ``always``, ``never``, or ``auto``.
+
+    ``auto`` colours only a terminal, and not when ``NO_COLOR`` is set to
+    anything non-empty or ``TERM`` is ``dumb``.
+    """
+    if mode == "always":
+        return True
+    if mode == "never":
+        return False
+    env = os.environ if environ is None else environ
+    if env.get("NO_COLOR") or env.get("TERM") == "dumb":
+        return False
+    isatty = getattr(out, "isatty", None)
+    return bool(isatty and isatty())
+
+
+def _run_game(game: Game, stdin: TextIO, out: TextIO, header: str, color: str = "auto") -> int:
     """Play ``game`` with saving wired up.
 
     A finished game (solved or revealed) is logged to the history and clears
     its save.
     """
+    game.color = use_color(color, out)
     path = save_path()
 
     def saver(g: Game) -> str:
@@ -371,7 +389,7 @@ def cmd_resume(args, stdin, out, err) -> int:
     except ValueError as exc:
         raise InputError(f"the saved game in {path} is damaged: {exc}") from None
     header = f"sudokit: resuming {_describe_saved(game)}"
-    return _run_game(game, stdin, out, header)
+    return _run_game(game, stdin, out, header, args.color)
 
 
 def cmd_stats(args, stdin, out, err) -> int:
@@ -442,9 +460,13 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--daily", action="store_true",
                    help="play today's puzzle (UTC date as seed; same for everyone)")
     p.add_argument("--date", metavar="YYYY-MM-DD", help="play the daily puzzle of this date (implies --daily)")
+    p.add_argument("--color", choices=["auto", "always", "never"], default="auto",
+                   help="colour the board (default: auto = only on a terminal; NO_COLOR turns it off)")
     p.set_defaults(func=cmd_play)
 
     p = sub.add_parser("resume", help="carry on with the game you saved in play")
+    p.add_argument("--color", choices=["auto", "always", "never"], default="auto",
+                   help="colour the board (default: auto = only on a terminal; NO_COLOR turns it off)")
     p.set_defaults(func=cmd_resume)
 
     p = sub.add_parser("stats", help="games per level, best and median times, hint-free streak")

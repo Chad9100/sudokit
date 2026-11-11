@@ -128,11 +128,23 @@ def to_line(cells: Sequence[int]) -> str:
     return "".join(str(v) if v else "." for v in cells)
 
 
-def format_grid(cells: Sequence[int], labels: bool = False) -> str:
+def format_grid(
+    cells: Sequence[int],
+    labels: bool = False,
+    styles: dict[int, str] | None = None,
+) -> str:
     """A drawn 9x9 grid. With ``labels`` rows and columns are numbered.
 
-    The unlabeled form can be read back by :func:`parse`.
+    ``styles`` maps a cell index to an ANSI SGR code (such as ``"1"`` or
+    ``"31"``) wrapped around that cell's character; it never changes the
+    layout. The unlabeled, unstyled form can be read back by :func:`parse`.
     """
+    styles = styles or {}
+
+    def show(i: int) -> str:
+        ch = str(cells[i]) if cells[i] else "."
+        return f"\x1b[{styles[i]}m{ch}\x1b[0m" if i in styles else ch
+
     pad = "  " if labels else ""
     rule = pad + "+-------+-------+-------+"
     out = []
@@ -143,7 +155,7 @@ def format_grid(cells: Sequence[int], labels: bool = False) -> str:
             out.append(rule)
         parts = []
         for b in range(3):
-            chunk = " ".join(str(cells[r * 9 + c]) if cells[r * 9 + c] else "." for c in range(b * 3, b * 3 + 3))
+            chunk = " ".join(show(r * 9 + c) for c in range(b * 3, b * 3 + 3))
             parts.append(chunk)
         row = "| " + " | ".join(parts) + " |"
         out.append((f"{r + 1} " if labels else "") + row)
