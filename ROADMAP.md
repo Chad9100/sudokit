@@ -61,7 +61,7 @@ Estimates are rough working hours for one person.
 ## v1.0: release (about 4 h)
 
 - [ ] Publish to PyPI with a trusted-publishing GitHub workflow
-- [ ] Daily puzzle (`sudokit play --daily`) seeded from the date
+- [x] Daily puzzle (`sudokit play --daily`) seeded from the date
 - [ ] Shell completion scripts and a review of every `--help` text
 - [ ] Profile the generator and cut hard-puzzle time in half
 

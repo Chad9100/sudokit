@@ -267,6 +267,11 @@ def cmd_hint(args, stdin, out, err) -> int:
     return EXIT_OK
 
 
+def daily_seed(day: dt.date) -> int:
+    """The seed of a day's puzzle: the date as YYYYMMDD."""
+    return day.year * 10000 + day.month * 100 + day.day
+
+
 def cmd_play(args, stdin, out, err) -> int:
     if args.puzzle is not None:
         cells = load_one(args.puzzle, io.StringIO())
@@ -279,6 +284,22 @@ def cmd_play(args, stdin, out, err) -> int:
         solution = result.solution
         info: dict = {}
         header = f"sudokit: your puzzle, {clue_count(cells)} clues"
+    elif args.daily or args.date:
+        if args.seed is not None:
+            err.write("sudokit: --seed cannot be combined with --daily or --date\n")
+            return EXIT_USAGE
+        try:
+            day = (dt.date.fromisoformat(args.date) if args.date
+                   else dt.datetime.now(dt.timezone.utc).date())
+        except ValueError:
+            err.write(f"sudokit: --date must look like 2026-11-11, not {args.date!r}\n")
+            return EXIT_USAGE
+        seed = daily_seed(day)
+        puzzle = generate(args.difficulty, seed=seed)
+        cells, solution = puzzle.cells, puzzle.solution
+        info = {"difficulty": puzzle.difficulty, "seed": seed, "daily": day.isoformat()}
+        header = (f"sudokit: daily puzzle for {day.isoformat()}, {puzzle.difficulty}, "
+                  f"seed {seed}, {puzzle.clues} clues")
     else:
         seed = args.seed if args.seed is not None else random.SystemRandom().randrange(1_000_000)
         puzzle = generate(args.difficulty, seed=seed)
@@ -418,6 +439,9 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--difficulty", "-d", choices=["easy", "medium", "hard"], default="medium")
     p.add_argument("--seed", type=int, help="seed for a repeatable puzzle")
     p.add_argument("--puzzle", help="play this puzzle instead (81-character string or file)")
+    p.add_argument("--daily", action="store_true",
+                   help="play today's puzzle (UTC date as seed; same for everyone)")
+    p.add_argument("--date", metavar="YYYY-MM-DD", help="play the daily puzzle of this date (implies --daily)")
     p.set_defaults(func=cmd_play)
 
     p = sub.add_parser("resume", help="carry on with the game you saved in play")

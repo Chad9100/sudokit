@@ -268,6 +268,32 @@ def test_print_given_puzzle_and_errors():
     assert run("print", "--per-page", "0")[0] == 2
 
 
+def test_daily_seed_is_the_date():
+    import datetime
+    from sudokit.cli import daily_seed
+    assert daily_seed(datetime.date(2026, 11, 11)) == 20261111
+    assert daily_seed(datetime.date(2027, 1, 5)) == 20270105
+
+
+def test_play_daily_date_matches_generate_with_that_seed(tmp_path, monkeypatch):
+    monkeypatch.setenv("SUDOKIT_HOME", str(tmp_path))
+    code, out, _ = run("play", "--date", "2026-11-11", "-d", "easy", stdin=io.StringIO("quit\n"))
+    assert code == 0
+    assert "daily puzzle for 2026-11-11, easy, seed 20261111" in out
+    _, gen, _ = run("generate", "-d", "easy", "--seed", "20261111", "--format", "line")
+    given = gen.strip().splitlines()[-1]
+    # every clue of the generated puzzle is drawn on the board
+    assert sum(1 for c in given if c != ".") == int(out.split("clues")[0].split(",")[-1])
+
+
+def test_play_daily_rejects_bad_date_and_seed(tmp_path, monkeypatch):
+    monkeypatch.setenv("SUDOKIT_HOME", str(tmp_path))
+    code, _, err = run("play", "--date", "11/11/2026")
+    assert code == 2 and "--date must look like" in err
+    code, _, err = run("play", "--daily", "--seed", "3")
+    assert code == 2 and "cannot be combined" in err
+
+
 def test_solve_reads_an_sdk_file(tmp_path):
     rows = [PUZZLE[i:i + 9] for i in range(0, 81, 9)]
     path = tmp_path / "p.sdk"

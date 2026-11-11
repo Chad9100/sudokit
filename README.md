@@ -289,10 +289,37 @@ no known technique applies, it names the most constrained cell and its value.
 
 ```sh
 sudokit play [--difficulty easy|medium|hard] [--seed N] [--puzzle PUZZLE]
+             [--daily] [--date YYYY-MM-DD]
 ```
 
 A line-based game: the board is drawn with row and column numbers and you
 type commands at a prompt that shows the elapsed time.
+
+`--daily` plays the puzzle of the day: the seed is the UTC date as `YYYYMMDD`,
+so everyone gets the same puzzle for a given difficulty, and `--date` replays
+any other day. It cannot be combined with `--seed`. Real output of
+`sudokit play --date 2026-11-11 -d easy` followed by `quit`:
+
+```
+sudokit: daily puzzle for 2026-11-11, easy, seed 20261111, 34 clues
+    1 2 3   4 5 6   7 8 9
+  +-------+-------+-------+
+1 | . . . | 9 7 . | 8 . 2 |
+2 | 1 8 7 | . . . | . 9 6 |
+3 | . . . | . . 1 | 4 . . |
+  +-------+-------+-------+
+4 | 9 2 1 | . . . | 5 . . |
+5 | 4 . . | 7 . 5 | . . 1 |
+6 | . . 8 | . . . | 2 6 3 |
+  +-------+-------+-------+
+7 | . . 5 | 3 . . | . . . |
+8 | 3 1 . | . . . | 6 5 9 |
+9 | 8 . 9 | . 1 2 | . . . |
+  +-------+-------+-------+
+Type help for commands.
+[00:00] > quit
+Bye.
+```
 
 | Command             | What it does                                         |
 |---------------------|------------------------------------------------------|
