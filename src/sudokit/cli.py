@@ -24,6 +24,7 @@ from .grid import (
     to_line,
 )
 from .hints import describe, hint_text
+from .printing import build_sheet
 from .logic import rate, solve_logically, steps_to_next_placement
 from .solver import solve
 from .stats import format_summary, summarize
@@ -214,6 +215,42 @@ def cmd_generate(args, stdin, out, err) -> int:
     return EXIT_OK
 
 
+def cmd_print(args, stdin, out, err) -> int:
+    if args.per_page < 1:
+        err.write("sudokit: --per-page must be at least 1\n")
+        return EXIT_USAGE
+    puzzles: list[list[int]] = []
+    solutions: list[list[int]] = []
+    labels: list[str] = []
+    if args.puzzle is not None:
+        for n, cells in enumerate(load_puzzles(args.puzzle, stdin), start=1):
+            result = solve(cells)
+            if result.status != "unique":
+                reason = (_no_solution_reason(cells) if result.status == "none"
+                          else _multiple_reason(result.solution, result.other))
+                err.write(f"sudokit: puzzle {n}: {reason}\n")
+                return EXIT_UNSOLVED
+            puzzles.append(cells)
+            solutions.append(result.solution)
+            labels.append("")
+    else:
+        if args.count < 1:
+            err.write("sudokit: --count must be at least 1\n")
+            return EXIT_USAGE
+        base = args.seed if args.seed is not None else random.SystemRandom().randrange(1_000_000)
+        for n in range(args.count):
+            try:
+                puzzle = generate(args.difficulty, seed=base + n)
+            except GenerationError as exc:
+                err.write(f"sudokit: {exc}\n")
+                return EXIT_UNSOLVED
+            puzzles.append(puzzle.cells)
+            solutions.append(puzzle.solution)
+            labels.append(f"{puzzle.difficulty}, seed {base + n}")
+    out.write(build_sheet(puzzles, solutions, labels, args.per_page))
+    return EXIT_OK
+
+
 def cmd_hint(args, stdin, out, err) -> int:
     cells = load_one(args.puzzle, stdin)
     if args.json:
@@ -363,6 +400,14 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--count", "-n", type=int, default=1, help="how many puzzles (seeds count up)")
     p.add_argument("--format", choices=["grid", "line"], default="grid")
     p.set_defaults(func=cmd_generate)
+
+    p = sub.add_parser("print", help="a printable sheet of puzzles with the solutions on later pages")
+    p.add_argument("puzzle", nargs="?", help="puzzles to print (81-character strings, a file); default: generate new ones")
+    p.add_argument("--difficulty", "-d", choices=["easy", "medium", "hard"], default="medium")
+    p.add_argument("--seed", type=int, help="seed for repeatable puzzles")
+    p.add_argument("--count", "-n", type=int, default=4, help="how many puzzles to generate (default: 4)")
+    p.add_argument("--per-page", type=int, default=2, help="puzzles per page (default: 2)")
+    p.set_defaults(func=cmd_print)
 
     p = sub.add_parser("hint", help="explain the next logical step")
     p.add_argument("puzzle", nargs="?", help=puzzle_help)

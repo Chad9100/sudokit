@@ -243,6 +243,31 @@ def test_hint_json():
     assert "next" not in json.loads(out)
 
 
+def test_print_generated_sheet_has_puzzles_then_solutions():
+    code, out, _ = run("print", "--seed", "5", "--count", "3", "-d", "easy")
+    assert code == 0
+    pages = out.split("\f")
+    assert len(pages) == 4  # 2 puzzle pages (2 + 1) and 2 solution pages
+    assert "Puzzle 1 (easy, seed 5)" in pages[0] and "Puzzle 2 (easy, seed 6)" in pages[0]
+    assert "Puzzle 3 (easy, seed 7)" in pages[1]
+    assert "Solution 1" in pages[2] and "Solution 3" in pages[3]
+    assert "." not in pages[2]
+    again = run("print", "--seed", "5", "--count", "3", "-d", "easy")[1]
+    assert again == out
+
+
+def test_print_given_puzzle_and_errors():
+    code, out, _ = run("print", PUZZLE, "--per-page", "1")
+    assert code == 0
+    pages = out.split("\f")
+    assert len(pages) == 2 and "Puzzle 1\n" in pages[0] and "Solution 1" in pages[1]
+    rows = [r.replace("|", "").split() for r in pages[1].splitlines() if r.startswith("|")]
+    assert "".join("".join(r) for r in rows) == SOLUTION
+    code, _, err = run("print", "1" + "." * 80)
+    assert code == 1 and "more than one solution" in err
+    assert run("print", "--per-page", "0")[0] == 2
+
+
 def test_solve_reads_an_sdk_file(tmp_path):
     rows = [PUZZLE[i:i + 9] for i in range(0, 81, 9)]
     path = tmp_path / "p.sdk"

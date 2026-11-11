@@ -106,6 +106,51 @@ $ sudokit generate --difficulty medium --seed 4 --count 3 --format line
 .....2..6278.15.4.6.....5.......675..6.5.1.8..574.......9.....2.2.83.1653..2.....
 ```
 
+### Print
+
+```sh
+sudokit print [PUZZLE] [--difficulty D] [--seed N] [--count N] [--per-page N]
+```
+
+A plain-text sheet for a printer: the puzzles first (two to a page by default),
+then the solutions on separate pages. Pages are separated by a form feed
+character, shown as `~` below. Without `PUZZLE` it generates `--count` puzzles
+(default 4); with a file or string it prints those (each must have exactly one
+solution). Real output of `sudokit print --seed 3 --count 1 -d easy`:
+
+```text
+Puzzle 1 (easy, seed 3)
+
++-------+-------+-------+
+| . . 4 | . . . | 3 5 6 |
+| . . . | . 2 . | . 4 . |
+| . 8 9 | 4 . 6 | 2 . . |
++-------+-------+-------+
+| . . 2 | . . . | . 8 1 |
+| 4 9 7 | . . . | 6 3 5 |
+| 8 5 . | . . . | 9 . . |
++-------+-------+-------+
+| . . 8 | 6 . 2 | 5 9 . |
+| . 2 . | . 9 . | . . . |
+| 9 3 5 | . . . | 1 . . |
++-------+-------+-------+
+~Solution 1
+
++-------+-------+-------+
+| 2 1 4 | 8 7 9 | 3 5 6 |
+| 6 7 3 | 1 2 5 | 8 4 9 |
+| 5 8 9 | 4 3 6 | 2 1 7 |
++-------+-------+-------+
+| 3 6 2 | 9 5 4 | 7 8 1 |
+| 4 9 7 | 2 8 1 | 6 3 5 |
+| 8 5 1 | 3 6 7 | 9 2 4 |
++-------+-------+-------+
+| 7 4 8 | 6 1 2 | 5 9 3 |
+| 1 2 6 | 5 9 3 | 4 7 8 |
+| 9 3 5 | 7 4 8 | 1 6 2 |
++-------+-------+-------+
+```
+
 ### Difficulty
 
 Difficulty is the hardest technique a person needs, trying the simplest ones
