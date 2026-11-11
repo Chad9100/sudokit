@@ -18,6 +18,7 @@ Commands:
   pencil clear    remove all pencil marks
   marks           show the pencil marks
   undo            take back the last change
+  redo            put back a change you undid
   hint            explain the next logical step
   check           list mistakes and clashes
   show            draw the board again
@@ -60,6 +61,8 @@ class Game:
         self.values = list(puzzle)
         self.marks: list[set[int]] = [set() for _ in range(81)]
         self.history: list[tuple[list[int], list[set[int]]]] = []
+        #: States taken back by ``undo``; any new change empties it.
+        self.redo_stack: list[tuple[list[int], list[set[int]]]] = []
         self.clock = clock
         self.started = clock() - elapsed
         self.finished_at: float | None = None
@@ -88,6 +91,7 @@ class Game:
 
     def _snapshot(self) -> None:
         self.history.append((self.values[:], [set(m) for m in self.marks]))
+        self.redo_stack.clear()
 
     def board_text(self) -> str:
         return format_grid(self.values, labels=True)
@@ -267,8 +271,16 @@ class Game:
     def undo(self) -> str:
         if not self.history:
             return "Nothing to undo."
+        self.redo_stack.append((self.values, self.marks))
         self.values, self.marks = self.history.pop()
         return "Undone."
+
+    def redo(self) -> str:
+        if not self.redo_stack:
+            return "Nothing to redo."
+        self.history.append((self.values, self.marks))
+        self.values, self.marks = self.redo_stack.pop()
+        return "Redone."
 
     def wrong_cells(self) -> list[int]:
         return [i for i in range(81) if self.values[i] and self.values[i] != self.solution[i]]
@@ -339,6 +351,8 @@ class Game:
             return self.marks_text()
         if cmd in ("undo", "u"):
             return self.undo() + "\n" + self.board_text()
+        if cmd == "redo":
+            return self.redo() + "\n" + self.board_text()
         if cmd in ("hint", "h"):
             return self.hint()
         if cmd in ("check", "c"):

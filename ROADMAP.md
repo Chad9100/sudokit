@@ -47,7 +47,7 @@ Estimates are rough working hours for one person.
       and `NO_COLOR`
 - [ ] Highlight every cell holding the digit you just placed
 - [ ] `marks` drawn as 3x3 mini-grids per cell when the terminal is wide enough
-- [ ] `redo` to go with `undo`
+- [x] `redo` to go with `undo`
 
 ## v0.5: import and export (about 3 h)
 

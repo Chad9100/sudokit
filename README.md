@@ -229,6 +229,7 @@ type commands at a prompt that shows the elapsed time.
 | `pencil clear`      | remove all marks (`pencil clear r3c5` for one cell)  |
 | `marks`             | show the pencil marks, filled cells in brackets      |
 | `undo`              | take back the last change                            |
+| `redo`              | put back a change you undid (a new move clears it)   |
 | `hint`              | explain the next step (or point at a wrong entry)    |
 | `check`             | list clashes and entries that differ from the answer |
 | `show`, `time`      | redraw the board, show the elapsed time              |
@@ -240,6 +241,23 @@ Givens cannot be changed. A digit that clashes with one in the same row,
 column or box is allowed but flagged. Placing a digit clears it from the
 pencil marks of every cell that sees it. Filling the grid correctly ends the
 game with your time and how many hints and checks you used.
+
+`redo` puts back what `undo` took away, until you make a new move. Real
+output (boards left out as `...`):
+
+```text
+[00:00] > r1c2 7
+r1c2 = 7.
+[00:00] > undo
+Undone.
+...
+[00:00] > redo
+Redone.
+...
+[00:00] > redo
+Nothing to redo.
+...
+```
 
 When commands are piped in, each one is echoed after the prompt so the output
 reads as a transcript. Real output (the board is drawn first):

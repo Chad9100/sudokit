@@ -52,6 +52,32 @@ def test_placing_a_clash_warns():
     assert "Careful: 3 is also in r1c1" in reply
 
 
+def test_redo_replays_undone_changes():
+    game = new_game()
+    assert game.redo() == "Nothing to redo."
+    game.handle("r1c2 7")
+    game.handle("pencil r1c4 12")
+    game.handle("undo")
+    game.handle("undo")
+    assert game.values[1] == 0
+    assert "Redone." in game.handle("redo")
+    assert game.values[1] == 7
+    game.handle("redo")
+    assert game.marks[3] == {1, 2}
+    assert game.redo() == "Nothing to redo."
+    game.handle("undo")
+    assert game.marks[3] == set()
+
+
+def test_new_change_clears_redo():
+    game = new_game()
+    game.handle("r1c2 7")
+    game.handle("undo")
+    game.handle("r1c2 4")
+    assert game.redo() == "Nothing to redo."
+    assert game.values[1] == 4
+
+
 def test_undo_restores_values_and_marks():
     game = new_game()
     game.handle("r1c2 7")
