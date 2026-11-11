@@ -241,3 +241,11 @@ def test_hint_json():
     assert data["hint"].endswith(f"Next: {cell} = {digit}.")
     code, out, _ = run("hint", SOLUTION, "--json")
     assert "next" not in json.loads(out)
+
+
+def test_solve_reads_an_sdk_file(tmp_path):
+    rows = [PUZZLE[i:i + 9] for i in range(0, 81, 9)]
+    path = tmp_path / "p.sdk"
+    path.write_text("#A Nobody\n[Puzzle]\n" + "\n".join(rows) + "\n", encoding="utf-8")
+    code, out, _ = run("solve", str(path), "--format", "line")
+    assert code == 0 and out == SOLUTION + "\n"

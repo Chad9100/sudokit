@@ -5,6 +5,7 @@ A grid is a list of 81 ints in row-major order; 0 means an empty cell.
 
 from __future__ import annotations
 
+import re
 from typing import Iterable, Sequence
 
 ROWS = [[r * 9 + c for c in range(9)] for r in range(9)]
@@ -59,12 +60,27 @@ def cell_names(cells: Iterable[int]) -> str:
     return ", ".join(cell_name(c) for c in sorted(cells))
 
 
+_SECTION_HEADER = re.compile(r"^\[[^\]]*\]$")
+_METADATA = re.compile(r"^[A-Za-z][A-Za-z ]*\s*=")
+_RULE = re.compile(r"^[.:+'`|\- ]*-{3,}[.:+'`|\- ]*$")
+
+
+def _is_noise(stripped: str) -> bool:
+    """Lines of ``.sdk`` and ``.ss`` files that hold no cells.
+
+    That is ``[Puzzle]`` section headers, ``Author=...`` metadata and the
+    horizontal rules of drawn grids (``.-----.`` in ``.ss`` files, where a
+    ``.`` would otherwise count as an empty cell).
+    """
+    return bool(_SECTION_HEADER.match(stripped) or _METADATA.match(stripped) or _RULE.match(stripped))
+
+
 def _content_lines(text: str) -> list[tuple[int, str]]:
     text = text.lstrip("﻿")
     lines = []
     for number, line in enumerate(text.splitlines(), start=1):
         stripped = line.strip()
-        if not stripped or stripped.startswith("#"):
+        if not stripped or stripped.startswith("#") or _is_noise(stripped):
             continue
         lines.append((number, stripped))
     return lines

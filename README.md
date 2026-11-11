@@ -31,6 +31,35 @@ Every command that takes a puzzle accepts any of these:
   border characters `| - + = :` are ignored, as are lines starting with `#`);
 - `-` or nothing at all, to read standard input.
 
+Files in the common `.sdk` and `.ss` layouts work as they are: `#` comment
+lines, a `[Puzzle]` section header, `Author=...` style metadata lines and the
+rule lines of a drawn grid (`.-------+-------+-------.`) are skipped. For
+example, `p.sdk` holding
+
+```text
+#A Example
+[Puzzle]
+Author=Example
+3.9...5..
+86579..4.
+.4...8679
+.5.......
+7.4...8.1
+.......5.
+5231...9.
+.9..52183
+..6...7.5
+```
+
+gives (real output):
+
+```text
+$ sudokit rate p.sdk
+Difficulty: easy
+Clues: 34
+Techniques: hidden single x45, naked single x2
+```
+
 A leading UTF-8 byte order mark (as written by Windows PowerShell and Notepad)
 is ignored, both for puzzles and for commands piped into `sudokit play`.
 

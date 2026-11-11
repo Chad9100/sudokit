@@ -68,3 +68,25 @@ def test_find_conflicts():
     cells[1] = 3  # same row and box as r1c1
     names = {(name, digit) for name, digit, _ in find_conflicts(cells)}
     assert names == {("box 1", 3), ("row 1", 3)}
+
+
+def _rows(puzzle=PUZZLE):
+    return [puzzle[i:i + 9] for i in range(0, 81, 9)]
+
+
+def test_sdk_file_with_header_comments_and_section():
+    text = "#A Someone\n#D Easy\n[Puzzle]\nAuthor=Someone\nTitle = Test\n" + "\n".join(_rows()) + "\n"
+    assert parse(text) == parse(PUZZLE)
+
+
+def test_ss_file_with_dotted_rules():
+    rows = ["| " + " | ".join(" ".join(r[i:i + 3]) for i in (0, 3, 6)) + " |" for r in _rows()]
+    rule = ".-------+-------+-------."
+    text = "\n".join([rule] + rows[:3] + ["|-------+-------+-------|"] + rows[3:6]
+                     + ["|-------+-------+-------|"] + rows[6:] + ["'-------+-------+-------'"])
+    assert parse(text) == parse(PUZZLE)
+
+
+def test_metadata_lines_do_not_hide_bad_characters():
+    with pytest.raises(PuzzleFormatError):
+        parse("Author=x\nx" + PUZZLE[1:])

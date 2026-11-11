@@ -51,7 +51,8 @@ Estimates are rough working hours for one person.
 
 ## v0.5: import and export (about 3 h)
 
-- [ ] Read the common `.sdk` and `.ss` puzzle file formats
+- [x] Read the common `.sdk` and `.ss` puzzle file formats (single puzzle per
+      file; headers, metadata and grid rules are skipped)
 - [ ] `sudokit print`: a plain-text sheet of several puzzles, with the
       solutions on a separate page, ready for a printer
 - [x] `--json` output for `solve`, `rate` and `hint` for use from scripts
