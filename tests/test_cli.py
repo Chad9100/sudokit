@@ -1,3 +1,4 @@
+import json
 import io
 import subprocess
 import sys
@@ -191,3 +192,52 @@ def test_module_entry_point():
     )
     assert proc.returncode == 0
     assert proc.stdout.strip() == SOLUTION
+
+
+# ---------------------------------------------------------------- --json
+
+
+def test_solve_json_object_per_puzzle():
+    code, out, err = run("solve", PUZZLE, "--json")
+    assert code == 0 and err == ""
+    data = json.loads(out)
+    assert data == {"puzzle": PUZZLE, "status": "solved", "solution": SOLUTION}
+
+
+def test_solve_json_batch_and_explain():
+    code, out, _ = run("solve", PUZZLE + "\n" + EXPERT, "--json", "--explain")
+    assert code == 0
+    first, second = [json.loads(line) for line in out.splitlines()]
+    assert first["steps"] and first["stuck"] is False
+    assert second["status"] == "solved" and len(second["solution"]) == 81
+
+
+def test_solve_json_reports_failures_on_stdout():
+    code, out, err = run("solve", "33" + "." * 79, "--json")
+    assert code == 1 and err == ""
+    data = json.loads(out)
+    assert data["status"] == "none" and "box 1" in data["reason"]
+    code, out, _ = run("solve", "1" + "." * 80, "--json")
+    assert code == 1 and json.loads(out)["status"] == "multiple"
+
+
+def test_rate_json():
+    code, out, _ = run("rate", PUZZLE, "--json")
+    data = json.loads(out)
+    assert code == 0
+    assert data["difficulty"] in ("easy", "medium", "hard", "expert")
+    assert data["clues"] == 81 - PUZZLE.count(".")
+    assert isinstance(data["techniques"], dict)
+    code, out, _ = run("rate", "1" + "." * 80, "--json")
+    assert code == 1 and json.loads(out)["status"] == "multiple"
+
+
+def test_hint_json():
+    code, out, _ = run("hint", PUZZLE, "--json")
+    data = json.loads(out)
+    assert code == 0 and data["puzzle"] == PUZZLE
+    cell, digit = data["next"]["cell"], data["next"]["digit"]
+    assert cell.startswith("r") and SOLUTION[(int(cell[1]) - 1) * 9 + int(cell[3]) - 1] == str(digit)
+    assert data["hint"].endswith(f"Next: {cell} = {digit}.")
+    code, out, _ = run("hint", SOLUTION, "--json")
+    assert "next" not in json.loads(out)

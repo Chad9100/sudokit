@@ -54,7 +54,7 @@ Estimates are rough working hours for one person.
 - [ ] Read the common `.sdk` and `.ss` puzzle file formats
 - [ ] `sudokit print`: a plain-text sheet of several puzzles, with the
       solutions on a separate page, ready for a printer
-- [ ] `--json` output for `solve`, `rate` and `hint` for use from scripts
+- [x] `--json` output for `solve`, `rate` and `hint` for use from scripts
 
 ## v1.0: release (about 4 h)
 

@@ -137,7 +137,7 @@ $ sudokit solve .7.5...4..4...1..71..7.6.2.4....7....59...37....2....9.3.6.9..45
 ### Solve
 
 ```sh
-sudokit solve [PUZZLE] [--format grid|line] [--explain]
+sudokit solve [PUZZLE] [--format grid|line] [--explain] [--json]
 ```
 
 The solver uses constraint propagation (naked and hidden singles over
@@ -378,6 +378,25 @@ Hint-free streak: 1 (best 1)
 
 With no history yet it says so and exits with status 0. Damaged lines in
 `history.jsonl` are skipped with a note on stderr.
+
+## JSON output
+
+`solve`, `rate` and `hint` take `--json` for scripts. `solve --json` prints one
+object per puzzle, one per line (add `--explain` for a `steps` list); `rate`
+and `hint` print a single object. Failures go to stdout as JSON too (with a
+`reason`), and the exit status is the same as without `--json`.
+
+```text
+$ sudokit solve .3.98..4.1.475..287.84.25...8.3654..6572..839341879652.261....5.1.6.72.4.7.52..6. --json
+{"puzzle": ".3.98..4.1.475..287.84.25...8.3654..6572..839341879652.261....5.1.6.72.4.7.52..6.", "status": "solved", "solution": "235981746194756328768432591982365417657214839341879652826143975513697284479528163"}
+$ sudokit rate ..6.1.......7..5..84....9.24..3....8...29...3..5.......82..5......82...631...7... --json
+{"puzzle": "..6.1.......7..5..84....9.24..3....8...29...3..5.......82..5......82...631...7...", "status": "rated", "difficulty": "expert", "logic_solves_it": false, "clues": 24, "techniques": {"hidden single": 12, "pointing pair": 3, "pointing triple": 1, "box/line reduction": 1, "naked pair": 1, "hidden pair": 2}}
+$ sudokit solve 33...............................................................................  --json
+{"puzzle": "33...............................................................................", "status": "none", "reason": "no solution: 3 appears more than once in box 1 (r1c1, r1c2)"}
+```
+
+`hint --json` has `hint` (the usual text), and when logic finds a digit,
+`next` (`{"cell": "r8c8", "digit": 8}`) and `steps` (a list of the steps).
 
 ## Exit status
 

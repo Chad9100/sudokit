@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import io
+import json
 import os
 import random
 import sys
@@ -23,7 +24,7 @@ from .grid import (
     to_line,
 )
 from .hints import describe, hint_text
-from .logic import rate, solve_logically
+from .logic import rate, solve_logically, steps_to_next_placement
 from .solver import solve
 from .stats import format_summary, summarize
 from .storage import (
@@ -100,8 +101,36 @@ def _multiple_reason(first: Sequence[int], second: Sequence[int]) -> str:
 # ------------------------------------------------------------- commands
 
 
+def _dump(out: TextIO, data: dict) -> None:
+    out.write(json.dumps(data, separators=(", ", ": ")) + "\n")
+
+
+def _solve_json(args, puzzles, out) -> int:
+    """One JSON object per puzzle, one per line."""
+    status = EXIT_OK
+    for cells in puzzles:
+        result = solve(cells)
+        record: dict = {"puzzle": to_line(cells), "status": {"unique": "solved"}.get(result.status, result.status)}
+        if result.status == "none":
+            record["reason"] = _no_solution_reason(cells)
+        elif result.status == "multiple":
+            record["reason"] = _multiple_reason(result.solution, result.other)
+        else:
+            record["solution"] = to_line(result.solution)
+            if args.explain:
+                logic = solve_logically(cells)
+                record["steps"] = [describe(s) for s in logic.steps]
+                record["stuck"] = not logic.solved
+        if result.status != "unique":
+            status = EXIT_UNSOLVED
+        _dump(out, record)
+    return status
+
+
 def cmd_solve(args, stdin, out, err) -> int:
     puzzles = load_puzzles(args.puzzle, stdin)
+    if args.json:
+        return _solve_json(args, puzzles, out)
     batch = len(puzzles) > 1
     status = EXIT_OK
     for n, cells in enumerate(puzzles, start=1):
@@ -130,13 +159,27 @@ def cmd_solve(args, stdin, out, err) -> int:
 def cmd_rate(args, stdin, out, err) -> int:
     cells = load_one(args.puzzle, stdin)
     result = solve(cells)
-    if result.status == "none":
-        err.write(f"sudokit: {_no_solution_reason(cells)}\n")
-        return EXIT_UNSOLVED
-    if result.status == "multiple":
-        err.write(f"sudokit: {_multiple_reason(result.solution, result.other)}; cannot rate it\n")
+    if result.status != "unique":
+        reason = (_no_solution_reason(cells) if result.status == "none"
+                  else _multiple_reason(result.solution, result.other))
+        if args.json:
+            _dump(out, {"puzzle": to_line(cells), "status": result.status, "reason": reason})
+        elif result.status == "none":
+            err.write(f"sudokit: {reason}\n")
+        else:
+            err.write(f"sudokit: {reason}; cannot rate it\n")
         return EXIT_UNSOLVED
     rating = rate(cells)
+    if args.json:
+        _dump(out, {
+            "puzzle": to_line(cells),
+            "status": "rated",
+            "difficulty": rating.name,
+            "logic_solves_it": rating.solved,
+            "clues": clue_count(cells),
+            "techniques": dict(rating.techniques),
+        })
+        return EXIT_OK
     line = f"Difficulty: {rating.name}"
     if not rating.solved:
         line += " (needs more than the techniques sudokit knows)"
@@ -173,6 +216,16 @@ def cmd_generate(args, stdin, out, err) -> int:
 
 def cmd_hint(args, stdin, out, err) -> int:
     cells = load_one(args.puzzle, stdin)
+    if args.json:
+        record: dict = {"puzzle": to_line(cells), "hint": hint_text(cells)}
+        if not find_conflicts(cells) and not all(cells) and solve(cells).status != "none":
+            steps, found = steps_to_next_placement(cells)
+            if found:
+                cell, digit = steps[-1].placements[0]
+                record["next"] = {"cell": cell_name(cell), "digit": digit}
+                record["steps"] = [describe(s) for s in steps]
+        _dump(out, record)
+        return EXIT_OK
     out.write(hint_text(cells) + "\n")
     return EXIT_OK
 
@@ -296,10 +349,12 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("puzzle", nargs="?", help=puzzle_help)
     p.add_argument("--format", choices=["grid", "line"], default="grid", help="output style (default: grid)")
     p.add_argument("--explain", action="store_true", help="print the logical steps before the solution")
+    p.add_argument("--json", action="store_true", help="one JSON object per puzzle instead of text")
     p.set_defaults(func=cmd_solve)
 
     p = sub.add_parser("rate", help="rate a puzzle's difficulty")
     p.add_argument("puzzle", nargs="?", help=puzzle_help)
+    p.add_argument("--json", action="store_true", help="print the rating as a JSON object")
     p.set_defaults(func=cmd_rate)
 
     p = sub.add_parser("generate", help="make new puzzles with a unique solution")
@@ -311,6 +366,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     p = sub.add_parser("hint", help="explain the next logical step")
     p.add_argument("puzzle", nargs="?", help=puzzle_help)
+    p.add_argument("--json", action="store_true", help="print the hint as a JSON object")
     p.set_defaults(func=cmd_hint)
 
     p = sub.add_parser("play", help="play in the terminal")
