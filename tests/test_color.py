@@ -2,7 +2,7 @@ import io
 import re
 
 from sudokit.cli import main, use_color
-from sudokit.game import CLASH_STYLE, ENTRY_STYLE, GIVEN_STYLE, Game
+from sudokit.game import CLASH_STYLE, ENTRY_STYLE, FOCUS_STYLE, GIVEN_STYLE, Game
 from sudokit.grid import parse
 
 PUZZLE = "3.9...5..86579..4..4...8679.5.......7.4...8.1.......5.5231...9..9..52183..6...7.5"
@@ -32,6 +32,7 @@ def test_plain_board_has_no_escape_codes():
 def test_colour_marks_givens_and_entries():
     game = new_game()
     game.handle("r1c2 7")
+    game.focus = 0  # the placed-digit highlight has its own tests below
     text = game.board_text()
     assert paint(GIVEN_STYLE, "3") in text
     assert paint(ENTRY_STYLE, "7") in text
@@ -40,6 +41,7 @@ def test_colour_marks_givens_and_entries():
 def test_colour_marks_clashes():
     game = new_game()
     game.handle("r1c2 3")  # a second 3 in row 1
+    game.focus = 0
     text = game.board_text()
     assert paint(CLASH_STYLE, "3") in text
     assert text.count(CLASH_STYLE) >= 2  # the new entry and the given 3
@@ -84,3 +86,32 @@ def test_play_default_is_plain_when_piped(monkeypatch, tmp_path):
     code, out = run_play(monkeypatch, tmp_path, "--puzzle", PUZZLE)
     assert code == 0
     assert "\x1b" not in out
+
+
+def test_placed_digit_is_highlighted_everywhere():
+    game = new_game()
+    game.handle("r1c2 7")
+    text = game.board_text()
+    assert paint(ENTRY_STYLE + ";" + FOCUS_STYLE, "7") in text  # the new entry
+    assert paint(GIVEN_STYLE + ";" + FOCUS_STYLE, "7") in text  # a given 7
+    assert text.count(";" + FOCUS_STYLE + "m") == game.values.count(7)
+    assert paint(GIVEN_STYLE, "3") in text  # other digits untouched
+
+
+def test_highlight_follows_the_last_placement_and_clears():
+    game = new_game()
+    game.handle("r1c2 7")
+    game.handle("r1c4 2")
+    text = game.board_text()
+    assert text.count(";" + FOCUS_STYLE + "m") == game.values.count(2)
+    game.handle("undo")
+    assert ";" + FOCUS_STYLE + "m" not in game.board_text()
+    game.handle("r1c2 7")
+    game.handle("r1c2 0")
+    assert ";" + FOCUS_STYLE + "m" not in game.board_text()
+
+
+def test_highlight_is_off_without_colour():
+    game = new_game(color=False)
+    game.handle("r1c2 7")
+    assert "\x1b" not in game.board_text()

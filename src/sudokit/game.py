@@ -32,6 +32,8 @@ Commands:
 GIVEN_STYLE = "1"
 ENTRY_STYLE = "36"
 CLASH_STYLE = "1;31"
+#: Added to every cell holding the digit you just placed (reverse video).
+FOCUS_STYLE = "7"
 
 _PLACE =re.compile(r"^r\s*([1-9])\s*c\s*([1-9])\s*(?:=\s*|\s+)([0-9.])$")
 _SHORT = re.compile(r"^([1-9])([1-9])([0-9.])$")
@@ -80,6 +82,9 @@ class Game:
         self.saver: Callable[[Game], str] | None = None
         #: Draw the board with ANSI colours (see ``use_color`` in the CLI).
         self.color = False
+        #: Digit just placed; with colour on, every cell holding it is
+        #: drawn in reverse video. Not saved; cleared by undo, redo and clears.
+        self.focus: int = 0
 
     # ---------------------------------------------------------- state
 
@@ -110,6 +115,10 @@ class Game:
         for _name, _digit, cells in find_conflicts(self.values):
             for c in cells:
                 styles[c] = CLASH_STYLE
+        if self.focus:
+            for i in range(81):
+                if self.values[i] == self.focus:
+                    styles[i] = styles.get(i, "") + ";" + FOCUS_STYLE
         return format_grid(self.values, labels=True, styles=styles)
 
     def marks_text(self) -> str:
@@ -231,6 +240,7 @@ class Game:
             return f"{cell_name(cell)} is already {digit or 'empty'}."
         self._snapshot()
         self.values[cell] = digit
+        self.focus = digit
         if not digit:
             return f"Cleared {cell_name(cell)}."
         self.marks[cell].clear()
@@ -289,6 +299,7 @@ class Game:
             return "Nothing to undo."
         self.redo_stack.append((self.values, self.marks))
         self.values, self.marks = self.history.pop()
+        self.focus = 0
         return "Undone."
 
     def redo(self) -> str:
@@ -296,6 +307,7 @@ class Game:
             return "Nothing to redo."
         self.history.append((self.values, self.marks))
         self.values, self.marks = self.redo_stack.pop()
+        self.focus = 0
         return "Redone."
 
     def wrong_cells(self) -> list[int]:

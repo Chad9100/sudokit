@@ -45,7 +45,7 @@ Estimates are rough working hours for one person.
 
 - [x] Colour (givens, your entries, clashes) with `--color auto|always|never`
       and `NO_COLOR`
-- [ ] Highlight every cell holding the digit you just placed
+- [x] Highlight every cell holding the digit you just placed (with colour on)
 - [ ] `marks` drawn as 3x3 mini-grids per cell when the terminal is wide enough
 - [x] `redo` to go with `undo`
 

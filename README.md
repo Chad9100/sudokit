@@ -296,6 +296,18 @@ sudokit play [--difficulty easy|medium|hard] [--seed N] [--puzzle PUZZLE]
 and every cell that clashes with another (same digit twice in a row, column or
 box) in bold red. `auto` (the default) colours only a terminal and stays plain
 when `NO_COLOR` is set or `TERM=dumb`; `always` forces it, `never` turns it off.
+With colour on, every cell holding the digit you just placed is also drawn in
+reverse video (`;7` is added to its style), so you can see where that digit
+already stands. Undo, redo and clearing a cell switch the highlight off.
+Real output of `r1c2 7` followed by `show` (rows 1 to 3, `--color always`,
+same puzzle, `ESC` for the escape character):
+
+```text
+1 | ESC[1m3ESC[0m ESC[36;7m7ESC[0m ESC[1m9ESC[0m | . . . | ESC[1m5ESC[0m . . |
+2 | ESC[1m8ESC[0m ESC[1m6ESC[0m ESC[1m5ESC[0m | ESC[1;7m7ESC[0m ESC[1m9ESC[0m . | . ESC[1m4ESC[0m . |
+3 | . ESC[1m4ESC[0m . | . . ESC[1m8ESC[0m | ESC[1m6ESC[0m ESC[1;7m7ESC[0m ESC[1m9ESC[0m |
+```
+
 `sudokit resume` takes the same option. Real output of
 `sudokit play --puzzle 3.9...5..86579..4..4...8679.5.......7.4...8.1.......5.5231...9..9..52183..6...7.5 --color always`
 after typing `r1c2 3`, shown with the escape characters written as `ESC`
