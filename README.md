@@ -354,6 +354,7 @@ Bye.
 | `pencil auto`       | fill in every candidate                              |
 | `pencil clear`      | remove all marks (`pencil clear r3c5` for one cell)  |
 | `marks`             | show the pencil marks, filled cells in brackets      |
+| `marks big`         | pencil marks as a 3x3 mini-grid per cell             |
 | `undo`              | take back the last change                            |
 | `redo`              | put back a change you undid (a new move clears it)   |
 | `hint`              | explain the next step (or point at a wrong entry)    |
@@ -367,6 +368,23 @@ Givens cannot be changed. A digit that clashes with one in the same row,
 column or box is allowed but flagged. Placing a digit clears it from the
 pencil marks of every cell that sees it. Filling the grid correctly ends the
 game with your time and how many hints and checks you used.
+
+`marks big` draws each cell as a 3x3 mini-grid in which digit d always sits at
+slot d (a dot is a missing mark, a given or placed digit is shown as `[d]` in
+the middle line). It needs a terminal at least 44 columns wide and otherwise
+says so and shows the compact `marks` view. Real output after `pencil r1c2 159`
+and `pencil r1c4 258` (first rows only, the rest left out):
+
+```text
+[00:00] > marks big
+   -------------+-------------+-------------
+        1..     | .2. ... ... |     ... ...
+1   [3] .5. [9] | .5. ... ... | [5] ... ...
+        ..9     | .8. ... ... |     ... ...
+                |         ... | ...     ...
+2   [8] [6] [5] | [7] [9] ... | ... [4] ...
+...
+```
 
 `redo` puts back what `undo` took away, until you make a new move. Real
 output (boards left out as `...`):

@@ -46,7 +46,8 @@ Estimates are rough working hours for one person.
 - [x] Colour (givens, your entries, clashes) with `--color auto|always|never`
       and `NO_COLOR`
 - [x] Highlight every cell holding the digit you just placed (with colour on)
-- [ ] `marks` drawn as 3x3 mini-grids per cell when the terminal is wide enough
+- [x] `marks big` draws 3x3 mini-grids per cell when the terminal is wide
+      enough (44 columns), falling back to the compact view otherwise
 - [x] `redo` to go with `undo`
 
 ## v0.5: import and export (about 3 h)

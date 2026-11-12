@@ -162,6 +162,28 @@ def test_unknown_command_and_help():
     assert "pencil auto" in game.handle("help")
 
 
+def test_marks_big_draws_mini_grids(monkeypatch):
+    import shutil
+
+    monkeypatch.setattr(shutil, "get_terminal_size", lambda *a, **k: shutil.os.terminal_size((120, 40)))
+    game = new_game()
+    game.handle("pencil r1c2 1 5 9")
+    lines = game.handle("marks big").splitlines()
+    assert len(lines) == 31
+    # r1c2 is the second cell: slots 1 and 5 and 9 filled, others dots
+    assert "1.. " in lines[1] and ".5." in lines[2] and "..9" in lines[3]
+    assert "[3]" in lines[2]  # given 3 in r1c1, middle line
+    assert game.handle("marks big extra") == "Usage: marks [big]"
+
+
+def test_marks_big_falls_back_when_terminal_is_narrow(monkeypatch):
+    import shutil
+
+    monkeypatch.setattr(shutil, "get_terminal_size", lambda *a, **k: shutil.os.terminal_size((30, 24)))
+    reply = new_game().handle("marks big")
+    assert reply.startswith("The terminal is narrower than") and "compact view" in reply
+
+
 def test_reveal_ends_the_game():
     _, out = run(new_game(), "reveal")
     assert "Solution:" in out and "| 3 7 9 |" in out

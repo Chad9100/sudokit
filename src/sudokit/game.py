@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+import shutil
 import time
 from typing import Any, Callable, Iterable, TextIO
 
@@ -16,7 +17,7 @@ Commands:
   pencil r3c5 1 2 toggle pencil marks 1 and 2 in r3c5 (pencil r3c5 12 works too)
   pencil auto     fill in every possible candidate
   pencil clear    remove all pencil marks
-  marks           show the pencil marks
+  marks           show the pencil marks (marks big: 3x3 mini-grid per cell)
   undo            take back the last change
   redo            put back a change you undid
   hint            explain the next logical step
@@ -142,6 +143,35 @@ class Game:
                 chunk = " ".join(texts[r * 9 + c].ljust(width) for c in range(b * 3, b * 3 + 3))
                 chunks.append(" " + chunk + " ")
             lines.append(f"{r + 1}  " + "|".join(chunks).rstrip())
+        return "\n".join(lines)
+
+    def marks_big_text(self) -> str:
+        """Pencil marks as a 3x3 mini-grid per cell (digit d sits at slot d).
+
+        Filled cells show their digit in brackets in the middle line.
+        """
+        lines: list[str] = []
+        rule = "   " + "+".join("-" * 13 for _ in range(3))
+        for r in range(9):
+            if r % 3 == 0:
+                lines.append(rule)
+            for sub in range(3):
+                chunks = []
+                for b in range(3):
+                    parts = []
+                    for c in range(b * 3, b * 3 + 3):
+                        i = r * 9 + c
+                        if self.values[i]:
+                            parts.append(f"[{self.values[i]}]" if sub == 1 else "   ")
+                        else:
+                            parts.append("".join(
+                                str(d) if d in self.marks[i] else "."
+                                for d in range(sub * 3 + 1, sub * 3 + 4)
+                            ))
+                    chunks.append(" " + " ".join(parts) + " ")
+                label = f"{r + 1}" if sub == 1 else " "
+                lines.append(f"{label}  " + "|".join(chunks))
+        lines.append(rule)
         return "\n".join(lines)
 
     # ---------------------------------------------------- save / load
@@ -376,6 +406,14 @@ class Game:
         if cmd in ("pencil", "p"):
             return self.pencil(words[1:])
         if cmd == "marks":
+            if words[1:] == ["big"]:
+                text = self.marks_big_text()
+                need = max(len(line) for line in text.splitlines())
+                if shutil.get_terminal_size().columns < need:
+                    return f"The terminal is narrower than {need} columns; showing the compact view.\n" + self.marks_text()
+                return text
+            if words[1:]:
+                return "Usage: marks [big]"
             return self.marks_text()
         if cmd in ("undo", "u"):
             return self.undo() + "\n" + self.board_text()
