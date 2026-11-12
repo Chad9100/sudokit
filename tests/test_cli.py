@@ -294,6 +294,38 @@ def test_play_daily_rejects_bad_date_and_seed(tmp_path, monkeypatch):
     assert code == 2 and "cannot be combined" in err
 
 
+def test_completion_bash_lists_commands_and_options():
+    code, out, _ = run("completion", "bash")
+    assert code == 0
+    assert "complete -o default -F _sudokit sudokit" in out
+    for word in ("solve", "generate", "completion", "--explain", "--daily", "--per-page"):
+        assert word in out
+    assert 'compgen -W "easy medium hard"' in out
+
+
+def test_completion_rejects_unknown_shell():
+    code, _, err = run("completion", "tcsh")
+    assert code == 2
+
+
+def test_completion_bash_script_is_valid_and_completes(tmp_path):
+    import shutil
+    bash = shutil.which("bash")
+    if bash is None:
+        return
+    _, out, _ = run("completion", "bash")
+    script = tmp_path / "c.bash"
+    script.write_text(out, encoding="utf-8", newline="\n")
+    probe = (
+        f'source "{script.as_posix()}"; '
+        'COMP_WORDS=(sudokit generate --difficulty ""); COMP_CWORD=3; _sudokit; '
+        'echo "${COMPREPLY[*]}"; '
+        'COMP_WORDS=(sudokit pl); COMP_CWORD=1; _sudokit; echo "${COMPREPLY[*]}"'
+    )
+    done = subprocess.run([bash, "-c", probe], capture_output=True, text=True)
+    assert done.stdout.split("\n")[:2] == ["easy medium hard", "play"], done.stderr
+
+
 def test_solve_reads_an_sdk_file(tmp_path):
     rows = [PUZZLE[i:i + 9] for i in range(0, 81, 9)]
     path = tmp_path / "p.sdk"

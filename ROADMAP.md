@@ -63,7 +63,8 @@ Estimates are rough working hours for one person.
 
 - [ ] Publish to PyPI with a trusted-publishing GitHub workflow
 - [x] Daily puzzle (`sudokit play --daily`) seeded from the date
-- [ ] Shell completion scripts and a review of every `--help` text
+- [x] `sudokit completion bash` (zsh and fish still to do)
+- [ ] Review every `--help` text
 - [ ] Profile the generator and cut hard-puzzle time in half
 
 **Total for v0.3 to v1.0: about 16 hours.**

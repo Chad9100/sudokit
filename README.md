@@ -523,6 +523,27 @@ Hint-free streak: 1 (best 1)
 With no history yet it says so and exits with status 0. Damaged lines in
 `history.jsonl` are skipped with a note on stderr.
 
+## Shell completion
+
+`sudokit completion bash` prints a bash completion script (commands, options
+and the values of options with fixed choices, generated from the parser so it
+cannot drift). Load it for the current shell, or save it where your
+completions live:
+
+```sh
+source <(sudokit completion bash)
+```
+
+Real results, from sourcing the generated script and simulating the tab key
+(`sudokit solve --ex<TAB>` and `sudokit play --color <TAB>`):
+
+```text
+--explain
+auto always never
+```
+
+Only bash is supported so far.
+
 ## JSON output
 
 `solve`, `rate` and `hint` take `--json` for scripts. `solve --json` prints one

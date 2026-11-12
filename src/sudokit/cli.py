@@ -12,6 +12,7 @@ import sys
 from typing import Sequence, TextIO
 
 from . import __version__
+from .completion import SHELLS, bash_script
 from .game import Game, play
 from .generator import GenerationError, generate
 from .grid import (
@@ -407,6 +408,11 @@ def cmd_stats(args, stdin, out, err) -> int:
     return EXIT_OK
 
 
+def cmd_completion(args, stdin, out, err) -> int:
+    out.write(bash_script(build_parser()))
+    return EXIT_OK
+
+
 # ---------------------------------------------------------------- parser
 
 
@@ -471,6 +477,10 @@ def build_parser() -> argparse.ArgumentParser:
 
     p = sub.add_parser("stats", help="games per level, best and median times, hint-free streak")
     p.set_defaults(func=cmd_stats)
+
+    p = sub.add_parser("completion", help="print a shell completion script (bash)")
+    p.add_argument("shell", choices=SHELLS, help="the shell to generate the script for")
+    p.set_defaults(func=cmd_completion)
     return parser
 
 
